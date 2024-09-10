@@ -1,0 +1,39 @@
+[package]
+name = "quic-session"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+web-transport = "0.6.0"
+log = "0.4"
+
+# native:
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tokio = { version = "1.40", features = ["full"] }
+web-transport-quinn = "0.3.2"
+env_logger = "0.10"
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+web-transport-wasm = "0.4.0"
+web-sys = { version = "0.3.70", features = [
+"WebTransport",
+"WebTransportBidirectionalStream",
+"WebTransportCloseInfo",
+"WebTransportCongestionControl",
+"WebTransportDatagramDuplexStream",
+"WebTransportDatagramStats",
+"WebTransportError",
+"WebTransportErrorOptions",
+"WebTransportErrorSource",
+"WebTransportHash",
+"WebTransportOptions",
+"WebTransportReceiveStream",
+"WebTransportReceiveStreamStats",
+"WebTransportReliabilityMode",
+"WebTransportSendStream",
+"WebTransportSendStreamOptions",
+"WebTransportSendStreamStats",
+"WebTransportStats"
+] }
