@@ -1,18 +1,23 @@
 use url::Url;
 use std::sync::Arc;
 use anyhow::{Context, Result};
+pub use web_transport;
+use std::{io::Read, net::SocketAddr};
+
+const CERTIFICATE: &str = "certificate.pem";
+const PRIVATE_KEY: &str = "privatekey.pem";
 
 #[cfg(target_arch = "wasm32")]
-pub async fn session(url: &Url) -> Result<web_transport::Session> {
+pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
     todo!()
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub async fn session(url: &Url) -> Result<web_transport::Session> {
+pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
     // Read the PEM certificate chain
 
     use rustls::pki_types::CertificateDer;
-    let chain = std::fs::File::open("certificate.pem").context("failed to open cert file")?;
+    let chain = std::fs::File::open(CERTIFICATE).context("failed to open cert file")?;
     let mut chain = std::io::BufReader::new(chain);
 
     let chain: Vec<CertificateDer> = rustls_pemfile::certs(&mut chain)
@@ -42,6 +47,65 @@ pub async fn session(url: &Url) -> Result<web_transport::Session> {
 
     // Connect to the given URL.
     let session = web_transport_quinn::connect(&client, &url).await?;
+
+    Ok(session.into())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub async fn server_endpoint(bind: SocketAddr) -> Result<quinn::Endpoint> {
+    // Read the PEM certificate chain
+
+    use rustls::pki_types::CertificateDer;
+    let chain = std::fs::File::open(CERTIFICATE).context("failed to open cert file")?;
+    let mut chain = std::io::BufReader::new(chain);
+
+    let chain: Vec<CertificateDer> = rustls_pemfile::certs(&mut chain)
+        .collect::<Result<_, _>>()
+        .context("failed to load certs")?;
+
+    anyhow::ensure!(!chain.is_empty(), "could not find certificate");
+
+    // Read the PEM private key
+    let mut keys = std::fs::File::open(PRIVATE_KEY).context("failed to open key file")?;
+
+    // Read the keys into a Vec so we can parse it twice.
+    let mut buf = Vec::new();
+    keys.read_to_end(&mut buf)?;
+
+    // Try to parse a PKCS#8 key
+    // -----BEGIN PRIVATE KEY-----
+    let key = rustls_pemfile::private_key(&mut std::io::Cursor::new(&buf))
+        .context("failed to load private key")?
+        .context("missing private key")?;
+
+    // Standard Quinn setup
+    let mut config = rustls::ServerConfig::builder_with_provider(Arc::new(
+        rustls::crypto::ring::default_provider(),
+    ))
+    .with_protocol_versions(&[&rustls::version::TLS13])?
+    .with_no_client_auth()
+    .with_single_cert(chain, key)?;
+
+    config.max_early_data_size = u32::MAX;
+    config.alpn_protocols = vec![web_transport_quinn::ALPN.to_vec()]; // this one is important
+
+    let config: quinn::crypto::rustls::QuicServerConfig = config.try_into()?;
+    let config = quinn::ServerConfig::with_crypto(Arc::new(config));
+
+    let endpoint = quinn::Endpoint::server(config, bind)?;
+
+    Ok(endpoint)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+use quinn::Incoming;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub async fn server_connect(inc: Incoming) -> Result<web_transport::Session> {
+    let conn = inc.await.context("failed to accept connection")?;
+
+    let request = web_transport_quinn::accept(conn).await?;
+    let session = request.ok().await.context("failed to accept session")?;
 
     Ok(session.into())
 }
