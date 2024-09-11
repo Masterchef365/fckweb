@@ -16,6 +16,10 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn handler(sess: Session) -> Result<()> {
-    Ok(())
+async fn handler(mut sess: Session) -> Result<()> {
+    loop {
+        let byt = sess.recv_datagram().await?;
+        let s = String::from_utf8(byt.to_vec())?;
+        println!("Bytes: {}", s);
+    }
 }
