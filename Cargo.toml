@@ -1,5 +1,6 @@
 [workspace]
-members = [
+members = [ "client",
     "quic-session",
     "server",
+    "client",
 ]
