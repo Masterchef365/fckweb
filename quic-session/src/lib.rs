@@ -4,8 +4,8 @@ use anyhow::{Context, Result};
 pub use web_transport;
 use std::{io::Read, net::SocketAddr};
 
-const CERTIFICATE: &str = "certs/cert.pem";
-const PRIVATE_KEY: &str = "certs/cert.key.pem";
+const CERTIFICATE: &str = "certs/localhost.crt";
+const PRIVATE_KEY: &str = "certs/localhost.key";
 
 #[cfg(target_arch = "wasm32")]
 pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
