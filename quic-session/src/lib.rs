@@ -98,10 +98,7 @@ pub async fn server_endpoint(bind: SocketAddr) -> Result<quinn::Endpoint> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-use quinn::Incoming;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub async fn server_connect(inc: Incoming) -> Result<web_transport::Session> {
+pub async fn server_connect(inc: quinn::Incoming) -> Result<web_transport::Session> {
     let conn = inc.await.context("failed to accept connection")?;
 
     let request = web_transport_quinn::accept(conn).await?;

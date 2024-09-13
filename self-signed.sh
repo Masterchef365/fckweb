@@ -1,6 +1,3 @@
-# cargo install rustls-cert-gen
-#rustls-cert-gen -o certs/
-
 # From: https://github.com/kixelated/web-transport-rs/blob/main/web-transport-quinn/cert/generate
 #
 # Generate a self-signed certificate for localhost.
