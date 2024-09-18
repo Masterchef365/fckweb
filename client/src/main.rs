@@ -1,5 +1,6 @@
 use anyhow::Result;
-use quic_session::web_transport::Session;
+use quic_session::web_transport;
+use web_transport::Session;
 
 #[tokio::main]
 async fn main() -> Result<()> {
