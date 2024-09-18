@@ -18,8 +18,19 @@ async fn main() -> Result<()> {
 
 async fn handler(mut sess: Session) -> Result<()> {
     loop {
-        let byt = sess.recv_datagram().await?;
-        let s = String::from_utf8(byt.to_vec())?;
-        println!("Bytes: {}", s);
+        let (mut sink, mut stream) = sess.accept_bi().await?;
+
+        tokio::spawn(async move {
+            loop {
+                if let Some(chunk) = stream.read(512).await? {
+                    let s = String::from_utf8(chunk.to_vec())?;
+                    println!("{}", s);
+
+                    sink.write(&"Hi back".to_string().into_bytes()).await?;
+                }
+            }
+
+            Ok::<_, anyhow::Error>(())
+        });
     }
 }
