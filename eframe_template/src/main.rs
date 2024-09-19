@@ -42,7 +42,9 @@ fn main() {
         use eframe::wasm_bindgen::JsCast;
         let start_result = eframe::WebRunner::new()
             .start(
-                canvas.dyn_into::<eframe::web_sys::HtmlCanvasElement>().unwrap(),
+                canvas
+                    .dyn_into::<eframe::web_sys::HtmlCanvasElement>()
+                    .unwrap(),
                 web_options,
                 Box::new(|cc| Ok(Box::new(eframe_template::TemplateApp::new(cc)))),
             )

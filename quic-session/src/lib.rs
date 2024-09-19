@@ -1,8 +1,8 @@
-use url::Url;
-use std::sync::Arc;
 use anyhow::{Context, Result};
-pub use web_transport;
+use std::sync::Arc;
 use std::{io::Read, net::SocketAddr};
+use url::Url;
+pub use web_transport;
 
 const CERTIFICATE: &str = "certs/localhost.crt";
 const PRIVATE_KEY: &str = "certs/localhost.key";
@@ -10,7 +10,10 @@ const PRIVATE_KEY: &str = "certs/localhost.key";
 #[cfg(target_arch = "wasm32")]
 pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
     Ok(web_transport_wasm::SessionBuilder::new(url.clone())
-        .connect().await.map_err(|e| anyhow::format_err!("{e}"))?.into())
+        .connect()
+        .await
+        .map_err(|e| anyhow::format_err!("{e}"))?
+        .into())
 }
 
 #[cfg(not(target_arch = "wasm32"))]

@@ -37,7 +37,10 @@ impl TemplateApp {
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
             let mut sess = quic_session::client_session(&url).await?;
 
-            let (send, recv) = sess.open_bi().await.map_err(|e| anyhow::format_err!("{e}"))?;
+            let (send, recv) = sess
+                .open_bi()
+                .await
+                .map_err(|e| anyhow::format_err!("{e}"))?;
 
             ctx.request_repaint();
 
