@@ -1,10 +1,12 @@
 [workspace]
 resolver = "2"
-members = [ "client",
+members = [ 
+    "client",
     "quic-session",
     "server",
     "client",
     "eframe_template",
+    "framework",
 ]
 
 [patch.crates-io]

@@ -25,7 +25,7 @@ fn spawn<T: Send, F: Future<Output = T> + 'static>(f: F) -> Promise<T> {
     Promise::spawn_local(f)
 }
 
-// Don't worry about it
+/// Don't worry about it
 unsafe impl Send for Connections {}
 
 impl TemplateApp {
