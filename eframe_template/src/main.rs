@@ -34,16 +34,22 @@ fn main() {
     let web_options = eframe::WebOptions::default();
 
     wasm_bindgen_futures::spawn_local(async {
+        let canvas = eframe::web_sys::window()
+            .and_then(|w| w.document())
+            .and_then(|d| d.get_element_by_id("the_canvas_id"))
+            .unwrap();
+
+        use eframe::wasm_bindgen::JsCast;
         let start_result = eframe::WebRunner::new()
             .start(
-                "the_canvas_id",
+                canvas.dyn_into::<eframe::web_sys::HtmlCanvasElement>().unwrap(),
                 web_options,
                 Box::new(|cc| Ok(Box::new(eframe_template::TemplateApp::new(cc)))),
             )
             .await;
 
         // Remove the loading text and spinner:
-        let loading_text = web_sys::window()
+        let loading_text = eframe::web_sys::window()
             .and_then(|w| w.document())
             .and_then(|d| d.get_element_by_id("loading_text"));
         if let Some(loading_text) = loading_text {
