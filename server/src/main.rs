@@ -30,6 +30,7 @@ async fn handler(mut sess: Session) -> Result<()> {
                 }
             }
 
+            #[allow(unreachable_code)]
             Ok::<_, anyhow::Error>(())
         });
     }

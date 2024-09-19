@@ -1,6 +1,12 @@
 [workspace]
+resolver = "2"
 members = [ "client",
     "quic-session",
     "server",
     "client",
+    "eframe_template",
 ]
+
+[patch.crates-io]
+egui = { git = "https://github.com/emilk/egui.git", branch = "master" }
+eframe = { git = "https://github.com/emilk/egui.git", branch = "master" }
