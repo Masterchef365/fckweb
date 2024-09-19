@@ -898,7 +898,7 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 [[package]]
 name = "ecolor"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "bytemuck",
  "emath",
@@ -908,7 +908,7 @@ dependencies = [
 [[package]]
 name = "eframe"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -945,18 +945,23 @@ dependencies = [
 name = "eframe_template"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "eframe",
  "egui",
  "env_logger",
  "log",
+ "poll-promise",
+ "quic-session",
  "serde",
+ "tokio",
+ "url",
  "wasm-bindgen-futures",
 ]
 
 [[package]]
 name = "egui"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "accesskit",
  "ahash",
@@ -971,7 +976,7 @@ dependencies = [
 [[package]]
 name = "egui-winit"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "accesskit_winit",
  "ahash",
@@ -989,7 +994,7 @@ dependencies = [
 [[package]]
 name = "egui_glow"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "ahash",
  "bytemuck",
@@ -1010,7 +1015,7 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "emath"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "bytemuck",
  "serde",
@@ -1064,7 +1069,7 @@ dependencies = [
 [[package]]
 name = "epaint"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 dependencies = [
  "ab_glyph",
  "ahash",
@@ -1081,7 +1086,7 @@ dependencies = [
 [[package]]
 name = "epaint_default_fonts"
 version = "0.28.1"
-source = "git+https://github.com/emilk/egui.git?branch=master#f4ed394a85fdce6a141fab20002554442c8b69aa"
+source = "git+https://github.com/emilk/egui.git?rev=f4ed394#f4ed394a85fdce6a141fab20002554442c8b69aa"
 
 [[package]]
 name = "equivalent"
@@ -2280,6 +2285,18 @@ dependencies = [
  "fdeflate",
  "flate2",
  "miniz_oxide 0.7.4",
+]
+
+[[package]]
+name = "poll-promise"
+version = "0.3.0"
+source = "git+https://github.com/Masterchef365/poll-promise.git?branch=wasm#a44859cc5db21a989318d38535f4b5e8487779b4"
+dependencies = [
+ "document-features",
+ "static_assertions",
+ "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

@@ -8,5 +8,5 @@ members = [ "client",
 ]
 
 [patch.crates-io]
-egui = { git = "https://github.com/emilk/egui.git", branch = "master" }
-eframe = { git = "https://github.com/emilk/egui.git", branch = "master" }
+egui = { git = "https://github.com/emilk/egui.git", rev = "f4ed394" }
+eframe = { git = "https://github.com/emilk/egui.git", rev = "f4ed394" }
