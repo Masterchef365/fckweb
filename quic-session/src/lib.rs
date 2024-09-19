@@ -9,7 +9,8 @@ const PRIVATE_KEY: &str = "certs/localhost.key";
 
 #[cfg(target_arch = "wasm32")]
 pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
-    todo!()
+    Ok(web_transport_wasm::SessionBuilder::new(url.clone())
+        .connect().await.map_err(|e| anyhow::format_err!("{e}"))?.into())
 }
 
 #[cfg(not(target_arch = "wasm32"))]
