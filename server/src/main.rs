@@ -6,9 +6,11 @@ async fn main() -> Result<()> {
     let endpoint = quic_session::server_endpoint("0.0.0.0:9090".parse().unwrap()).await?;
 
     while let Some(inc) = endpoint.accept().await {
+        println!("new connection");
         tokio::spawn(async move {
             let sess = quic_session::server_connect(inc).await?;
             handler(sess).await?;
+            println!("connection ended");
             Ok::<_, anyhow::Error>(())
         });
     }
