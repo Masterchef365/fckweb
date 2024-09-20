@@ -696,6 +696,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "egui",
+ "env_logger",
+ "log",
+ "poll-promise",
+ "quic-session",
+ "serde",
+ "tokio",
+ "url",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
 name = "clipboard-win"
 version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -929,23 +946,6 @@ dependencies = [
  "winapi",
  "windows-sys 0.52.0",
  "winit",
-]
-
-[[package]]
-name = "eframe_template"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "eframe",
- "egui",
- "env_logger",
- "log",
- "poll-promise",
- "quic-session",
- "serde",
- "tokio",
- "url",
- "wasm-bindgen-futures",
 ]
 
 [[package]]
