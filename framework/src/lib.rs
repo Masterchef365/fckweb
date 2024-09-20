@@ -23,19 +23,29 @@ impl Framework {
     }
 }
 
+/// Internal type representing the identity of a connection between client and server
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+struct BiStream(usize);
+
+/*
 /// Uniquely identifies a stream, and carries type information about its contents.
 /// This is the type used to transmit information between client and server about the identity of a
 /// connected stream/sink combo.
 ///
 /// This is a type you should return from your API, in order to get a bidirectional stream on the other end.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct BiStream<ClientToServer, ServerToClient> {
-    id: usize,
+pub struct TypedBiStream<ClientToServer, ServerToClient> {
+    id: BiStream,
     _phantom: PhantomData<(ClientToServer, ServerToClient)>,
 }
 
-impl<CTS, STC> BiStream<CTS, STC> {
+impl<CTS, STC> TypedBiStream<CTS, STC> {
     pub async fn accept(&self, fr: &mut Framework) -> Box<dyn Stream<CTS> + Sink<STC>> {
         todo!()
     }
 }
+*/
+
+/// This is the type used to provide connectivity to an alternate tarpc connection
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct TarpcBiStream(BiStream);
