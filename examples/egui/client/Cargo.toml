@@ -22,7 +22,7 @@ log = "0.4"
 
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
-quic-session = { path = "../quic-session" }
+quic-session = { path = "../../../quic-session" }
 url = "2.5.2"
 anyhow = "1"
 

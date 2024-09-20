@@ -1,12 +1,11 @@
 [workspace]
 resolver = "2"
 members = [ 
-    "client",
     "quic-session",
-    "server",
-    "client",
-    "eframe_template",
     "framework",
+    "examples/egui/server",
+    "examples/egui/client",
+    "examples/egui/client",
 ]
 
 [patch.crates-io]

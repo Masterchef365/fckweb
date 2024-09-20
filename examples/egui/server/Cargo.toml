@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-quic-session = { path = "../quic-session" }
+quic-session = { path = "../../../quic-session" }
 tokio = { version = "1.40", features = ["full"] }
