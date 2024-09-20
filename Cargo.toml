@@ -5,9 +5,10 @@ members = [
     "framework",
     "examples/egui/server",
     "examples/egui/client",
-    "examples/egui/client",
+    "examples/egui/common",
 ]
 
 [patch.crates-io]
 egui = { git = "https://github.com/emilk/egui.git", rev = "f4ed394" }
 eframe = { git = "https://github.com/emilk/egui.git", rev = "f4ed394" }
+tarpc = { git = "https://github.com/Masterchef365/tarpc.git", branch = "whiz-port", features = ["serde1"] }

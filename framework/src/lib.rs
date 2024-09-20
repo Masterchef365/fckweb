@@ -1,4 +1,7 @@
+pub use tarpc;
+pub use serde;
 use std::marker::PhantomData;
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 
 use futures::{Sink, Stream};
 use web_transport::Session;
@@ -24,7 +27,7 @@ impl Framework {
 }
 
 /// Internal type representing the identity of a connection between client and server
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct BiStream(usize);
 
 /*
@@ -49,3 +52,12 @@ impl<CTS, STC> TypedBiStream<CTS, STC> {
 /// This is the type used to provide connectivity to an alternate tarpc connection
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TarpcBiStream(BiStream);
+
+
+pub fn encode<T: Serialize>(value: &T) -> bincode::Result<Vec<u8>> {
+    bincode::serialize(value)
+}
+
+pub fn decode<T: DeserializeOwned>(bytes: &[u8]) -> bincode::Result<T> {
+    bincode::deserialize(bytes)
+}
