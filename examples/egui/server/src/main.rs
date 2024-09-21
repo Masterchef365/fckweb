@@ -25,7 +25,7 @@ async fn handler(mut sess: Session) -> Result<()> {
         let socks = sess.accept_bi().await?;
 
         tokio::spawn(async move {
-            let transport = framework::webtransport_protocol(socks);
+            let transport = framework::io::webtransport_protocol(socks);
             let transport = BaseChannel::with_defaults(transport);
 
             let server = MyServiceServer;
