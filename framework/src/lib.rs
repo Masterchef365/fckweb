@@ -1,9 +1,10 @@
-pub use tarpc;
 pub use serde;
-use tarpc::{transport::channel::UnboundedChannel, Transport};
-use tokio::io::{AsyncWriteExt, DuplexStream, SimplexStream, ReadHalf, WriteHalf};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use tokio_util::codec::{Decoder, LengthDelimitedCodec};
 use std::{marker::PhantomData, sync::Arc, task::Poll};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+pub use tarpc;
+use tarpc::{transport::channel::UnboundedChannel, Transport};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream, ReadHalf, SimplexStream, WriteHalf};
 
 use futures::{AsyncRead, Sink, SinkExt, Stream, StreamExt};
 use web_transport::{RecvStream, SendStream, Session};
@@ -58,13 +59,33 @@ const MAX_READ_BYTES: usize = 4096; // Chosen arbitrarily!
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct TarpcBiStream(BiStream);
 
-pub fn webtransport_rx_stream(mut rx: web_transport::RecvStream) -> ReadHalf<tokio::io::SimplexStream> {
-    let (ret, mut proxy) = tokio::io::simplex(BUFFER_SIZE);
+/// Converts a webtransport bidirectional connection into a DuplexStream
+/// Warning: spawns tasks underneath
+pub fn webtransport_futures_bridge(
+    (mut rx, mut tx): (RecvStream, SendStream),
+) -> DuplexStream {
+    let (proxy, ret) = tokio::io::duplex(BUFFER_SIZE);
+
+    let (mut readhalf, mut writehalf) = tokio::io::split(proxy);
+
+    tokio::spawn(async move {
+        loop {
+            let mut buf = vec![0_u8; BUFFER_SIZE];
+
+            let n_bytes_read = readhalf.read(&mut buf).await?;
+            buf.truncate(n_bytes_read);
+
+            tx.write(&buf).await?;
+        }
+
+        #[allow(unreachable_code)]
+        Ok::<_, anyhow::Error>(())
+    });
 
     tokio::spawn(async move {
         loop {
             if let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
-                proxy.write(bytes.as_ref()).await?;
+                writehalf.write(bytes.as_ref()).await?;
             }
         }
 
@@ -75,40 +96,18 @@ pub fn webtransport_rx_stream(mut rx: web_transport::RecvStream) -> ReadHalf<tok
     ret
 }
 
-/*
-pub fn webtransport_futures_bridge<Rx, Tx>((mut rx, mut tx): (RecvStream, SendStream)) -> DuplexStream {
-    let (duplex, returned) = tokio::io::duplex(BUFFER_SIZE);
+pub fn webtransport_transport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
+    socks: (RecvStream, SendStream),
+) -> impl Transport<Tx, Rx> {
+    let duplex = webtransport_futures_bridge(socks);
 
-    let duplex = Arc::new(tokio::sync::Mutex::new(duplex));
-
-    let dup1 = duplex.clone();
-
-    tokio::spawn(async move {
-        loop {
-            if let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
-                dup1.lock().await.write(bytes.as_ref()).await?;
-            }
-        }
-
-        #[allow(unreachable_code)]
-        Ok::<_, anyhow::Error>(())
-    });
-
-    tokio::spawn(async move {
-        loop {
-            if let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
-                dup1.lock().await.write(bytes.as_ref()).await?;
-            }
-        }
-
-        #[allow(unreachable_code)]
-        Ok::<_, anyhow::Error>(())
-    });
-
-
-    returned
+    LengthDelimitedCodec::default()
+        .framed(duplex)
+        .with(|obj: Tx| async move { Ok(encode(obj)?) })
+        .map(|frame| {
+            Ok(decode::<Rx>(&frame?)?)
+        })
 }
-*/
 
 /// The encoding function for all data. Mostly for internal use, exposed here for debugging
 /// potential
