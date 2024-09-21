@@ -2,7 +2,8 @@ use std::future::Future;
 
 use anyhow::Result;
 use common::MyServiceClient;
-use egui::Ui;
+use egui::{DragValue, Ui};
+use framework::tarpc::client::RpcError;
 use poll_promise::Promise;
 use quic_session::web_transport::{RecvStream, SendStream, Session};
 
@@ -14,6 +15,10 @@ pub struct TemplateApp {
     conn: Promise<Result<Connections>>,
     received: Vec<String>,
     client: Option<Promise<MyServiceClient>>,
+
+    a: u32,
+    b: u32,
+    result: Option<Promise<Result<u32, RpcError>>>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -51,6 +56,9 @@ impl TemplateApp {
         });
 
         Self {
+            a: 69,
+            b: 420,
+            result: None,
             received: vec![],
             conn,
             client: None,
@@ -75,7 +83,21 @@ fn connection_status(ui: &mut Ui, prom: &Promise<Result<Connections>>) {
 impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| connection_status(ui, &self.conn));
+        egui::CentralPanel::default().show(ctx, |ui| {
+            connection_status(ui, &self.conn);
+            ui.add(DragValue::new(&mut self.a).prefix("a: "));
+            ui.add(DragValue::new(&mut self.b).prefix("b: "));
+
+            self.open_conn(ui).unwrap();
+
+            if let Some(result) = self.result.as_ref().and_then(|res| res.ready()) {
+                match result {
+                    Ok(val) => ui.label(format!("Result: {val}")),
+                    Err(e) => ui.label(format!("Error: {e:?}")),
+                };
+            }
+
+        });
     }
 }
 
@@ -84,15 +106,32 @@ impl TemplateApp {
         if let Some(Ok(conn)) = self.conn.ready_mut() {
             match &mut self.client {
                 None => {
-                    self.client = Some(Promise::spawn_async(async {
-                        let socks = conn.sess.accept_bi().await.unwrap();
+                    let mut sess = conn.sess.clone();
+                    self.client = Some(Promise::spawn_async(async move {
+                        let socks = sess.accept_bi().await.unwrap();
                         let channel = framework::webtransport_transport_protocol(socks);
                         let newclient = MyServiceClient::new(Default::default(), channel);
                         tokio::task::spawn(newclient.dispatch);
                         newclient.client
                     }));
                 }
-                Some(_) => (),
+                Some(client) => {
+                    if let Some(client) = client.ready() {
+                        let ctx = framework::tarpc::context::current();
+
+                        if ui.button("Add").clicked() {
+
+
+                            let client = client.clone();
+                            let a = self.a;
+                            let b = self.b;
+
+                            self.result = Some(Promise::spawn_async(async move {
+                                client.add(ctx, a, b).await
+                            }));
+                        }
+                    }
+                }
             }
         }
 
