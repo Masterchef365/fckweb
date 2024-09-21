@@ -68,7 +68,7 @@ pub fn webtransport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
         .framed(duplex)
         .sink_map_err(FrameworkError::from)
         .with(|obj: Tx| async move { Ok(Bytes::from(encode(&obj)?)) })
-        .map(|frame| Ok(decode::<Rx>(&frame?)?))
+        .map(|frame| Ok(decode(&frame?)?))
 }
 
 #[derive(thiserror::Error, Debug)]
