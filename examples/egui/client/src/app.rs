@@ -1,18 +1,19 @@
 use std::future::Future;
 
 use anyhow::Result;
+use common::MyServiceClient;
+use egui::Ui;
 use poll_promise::Promise;
 use quic_session::web_transport::{RecvStream, SendStream, Session};
 
 struct Connections {
     sess: Session,
-    recv: RecvStream,
-    send: SendStream,
 }
 
 pub struct TemplateApp {
     conn: Promise<Result<Connections>>,
     received: Vec<String>,
+    client: Option<Promise<MyServiceClient>>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -35,21 +36,38 @@ impl TemplateApp {
 
         let conn = spawn(async move {
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let mut sess = quic_session::client_session(&url).await?;
+            let sess = quic_session::client_session(&url).await?;
 
+            /*
             let (send, recv) = sess
                 .open_bi()
                 .await
                 .map_err(|e| anyhow::format_err!("{e}"))?;
+            */
 
             ctx.request_repaint();
 
-            Ok(Connections { send, recv, sess })
+            Ok(Connections { sess })
         });
 
         Self {
             received: vec![],
             conn,
+            client: None,
+        }
+    }
+}
+
+fn connection_status(ui: &mut Ui, prom: &Promise<Result<Connections>>) {
+    match prom.ready() {
+        Some(Ok(_)) => {
+            ui.label(format!("Connection open"));
+        }
+        Some(Err(e)) => {
+            ui.label(format!("Error: {e:?}"));
+        }
+        None => {
+            ui.label(format!("Connecting"));
         }
     }
 }
@@ -57,30 +75,27 @@ impl TemplateApp {
 impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::CentralPanel::default().show(ctx, |ui| match self.conn.ready_mut() {
-            Some(Ok(conn)) => {
-                ui.label(format!("Connection open"));
-            }
-            Some(Err(e)) => {
-                ui.label(format!("Error: {e:?}"));
-            }
-            None => {
-                ui.label(format!("Connecting"));
-            }
-        });
+        egui::CentralPanel::default().show(ctx, |ui| connection_status(ui, &self.conn));
     }
 }
 
-fn powered_by_egui_and_eframe(ui: &mut egui::Ui) {
-    ui.horizontal(|ui| {
-        ui.spacing_mut().item_spacing.x = 0.0;
-        ui.label("Powered by ");
-        ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-        ui.label(" and ");
-        ui.hyperlink_to(
-            "eframe",
-            "https://github.com/emilk/egui/tree/master/crates/eframe",
-        );
-        ui.label(".");
-    });
+impl TemplateApp {
+    fn open_conn(&mut self, ui: &mut Ui) -> Result<()> {
+        if let Some(Ok(conn)) = self.conn.ready_mut() {
+            match &mut self.client {
+                None => {
+                    self.client = Some(Promise::spawn_async(async {
+                        let socks = conn.sess.accept_bi().await.unwrap();
+                        let channel = framework::webtransport_transport_protocol(socks);
+                        let newclient = MyServiceClient::new(Default::default(), channel);
+                        tokio::task::spawn(newclient.dispatch);
+                        newclient.client
+                    }));
+                }
+                Some(_) => (),
+            }
+        }
+
+        Ok(())
+    }
 }

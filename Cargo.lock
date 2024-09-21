@@ -731,9 +731,11 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "common",
  "eframe",
  "egui",
  "env_logger",
+ "framework",
  "log",
  "poll-promise",
  "quic-session",
