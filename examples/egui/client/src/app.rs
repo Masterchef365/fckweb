@@ -111,7 +111,7 @@ impl TemplateApp {
                     let mut sess = conn.sess.clone();
                     self.client = Some(Promise::spawn_async(async move {
                         let socks = sess.open_bi().await.unwrap();
-                        let channel = framework::webtransport_transport_protocol(socks);
+                        let channel = framework::webtransport_protocol(socks);
                         let newclient = MyServiceClient::new(Default::default(), channel);
                         tokio::task::spawn(newclient.dispatch);
                         newclient.client

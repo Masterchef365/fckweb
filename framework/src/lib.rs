@@ -98,7 +98,7 @@ pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -
     ret
 }
 
-pub fn webtransport_transport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
+pub fn webtransport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
     socks: (SendStream, RecvStream),
 ) -> impl Transport<Tx, Rx, Error = FrameworkError> {
     let duplex = webtransport_futures_bridge(socks);
