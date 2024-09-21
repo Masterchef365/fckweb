@@ -1,4 +1,6 @@
 use anyhow::Result;
+use common::MyService;
+use framework::{futures::StreamExt, tarpc::server::{BaseChannel, Channel}};
 use quic_session::web_transport::Session;
 
 #[tokio::main]
@@ -20,20 +22,27 @@ async fn main() -> Result<()> {
 
 async fn handler(mut sess: Session) -> Result<()> {
     loop {
-        let (mut sink, mut stream) = sess.accept_bi().await?;
+        let socks = sess.accept_bi().await?;
 
         tokio::spawn(async move {
-            loop {
-                if let Some(chunk) = stream.read(512).await? {
-                    let s = String::from_utf8(chunk.to_vec())?;
-                    println!("{}", s);
+            let transport = framework::webtransport_transport_protocol(socks);
+            let transport = BaseChannel::with_defaults(transport);
 
-                    sink.write(&"Hi back".to_string().into_bytes()).await?;
-                }
-            }
+            let server = MyServiceServer;
+            let executor = transport.execute(server.serve());
 
-            #[allow(unreachable_code)]
-            Ok::<_, anyhow::Error>(())
+            tokio::spawn(executor.for_each(|response| async move {
+                tokio::spawn(response);
+            }));
         });
+    }
+}
+
+#[derive(Clone)]
+struct MyServiceServer;
+
+impl MyService for MyServiceServer {
+    async fn add(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
+        a + b
     }
 }

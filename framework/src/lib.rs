@@ -1,9 +1,11 @@
-use bytes::Bytes;
 pub use serde;
+pub use tarpc;
+pub use futures;
+
+use bytes::Bytes;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::convert::Infallible;
 use std::{marker::PhantomData, sync::Arc, task::Poll};
-pub use tarpc;
 use tarpc::{transport::channel::UnboundedChannel, Transport};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream, ReadHalf, SimplexStream, WriteHalf};
 use tokio_util::codec::{Decoder, LengthDelimitedCodec};
@@ -63,7 +65,7 @@ pub struct TarpcBiStream(BiStream);
 
 /// Converts a webtransport bidirectional connection into a DuplexStream
 /// Warning: spawns tasks underneath
-pub fn webtransport_futures_bridge((mut rx, mut tx): (RecvStream, SendStream)) -> DuplexStream {
+pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -> DuplexStream {
     let (proxy, ret) = tokio::io::duplex(BUFFER_SIZE);
 
     let (mut readhalf, mut writehalf) = tokio::io::split(proxy);
@@ -97,7 +99,7 @@ pub fn webtransport_futures_bridge((mut rx, mut tx): (RecvStream, SendStream)) -
 }
 
 pub fn webtransport_transport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
-    socks: (RecvStream, SendStream),
+    socks: (SendStream, RecvStream),
 ) -> impl Transport<Tx, Rx, Error = FrameworkError> {
     let duplex = webtransport_futures_bridge(socks);
 
