@@ -105,7 +105,7 @@ pub fn webtransport_transport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
 
     LengthDelimitedCodec::default()
         .framed(duplex)
-        .sink_map_err(|e| e.into())
+        .sink_map_err(FrameworkError::from)
         .with(|obj: Tx| async move { Ok(Bytes::from(encode(&obj)?)) })
         .map(|frame| {
             Ok(decode::<Rx>(&frame?)?)
