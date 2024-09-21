@@ -1,3 +1,4 @@
+use bytes::Bytes;
 pub use serde;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio_util::codec::{Decoder, LengthDelimitedCodec};
@@ -5,6 +6,7 @@ use std::{marker::PhantomData, sync::Arc, task::Poll};
 pub use tarpc;
 use tarpc::{transport::channel::UnboundedChannel, Transport};
 use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream, ReadHalf, SimplexStream, WriteHalf};
+use std::convert::Infallible;
 
 use futures::{AsyncRead, Sink, SinkExt, Stream, StreamExt};
 use web_transport::{RecvStream, SendStream, Session};
@@ -79,7 +81,7 @@ pub fn webtransport_futures_bridge(
         }
 
         #[allow(unreachable_code)]
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, FrameworkError>(())
     });
 
     tokio::spawn(async move {
@@ -90,7 +92,7 @@ pub fn webtransport_futures_bridge(
         }
 
         #[allow(unreachable_code)]
-        Ok::<_, anyhow::Error>(())
+        Ok::<_, FrameworkError>(())
     });
 
     ret
@@ -98,25 +100,40 @@ pub fn webtransport_futures_bridge(
 
 pub fn webtransport_transport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
     socks: (RecvStream, SendStream),
-) -> impl Transport<Tx, Rx> {
+) -> impl Transport<Tx, Rx, Error = FrameworkError> {
     let duplex = webtransport_futures_bridge(socks);
 
     LengthDelimitedCodec::default()
         .framed(duplex)
-        .with(|obj: Tx| async move { Ok(encode(obj)?) })
+        .sink_map_err(|e| e.into())
+        .with(|obj: Tx| async move { Ok(Bytes::from(encode(&obj)?)) })
         .map(|frame| {
             Ok(decode::<Rx>(&frame?)?)
         })
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum FrameworkError {
+    #[error("Serialization")]
+    Bincode(#[from] bincode::Error),
+
+    // TODO: fix me! 
+    #[error("Websocket")]
+    WebSocket(#[from] web_transport::Error),
+
+    // TODO: fix me! 
+    #[error("Duplex IO")]
+    Io(#[from] std::io::Error),
+}
+
 /// The encoding function for all data. Mostly for internal use, exposed here for debugging
 /// potential
-pub fn encode<T: Serialize>(value: &T) -> bincode::Result<Vec<u8>> {
+fn encode<T: Serialize>(value: &T) -> bincode::Result<Vec<u8>> {
     bincode::serialize(value)
 }
 
 /// The dencoding function for all data. Mostly for internal use, exposed here for debugging
 /// potential
-pub fn decode<T: DeserializeOwned>(bytes: &[u8]) -> bincode::Result<T> {
+fn decode<T: DeserializeOwned>(bytes: &[u8]) -> bincode::Result<T> {
     bincode::deserialize(bytes)
 }

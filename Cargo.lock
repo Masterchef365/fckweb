@@ -1258,13 +1258,13 @@ dependencies = [
 name = "framework"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "async-stream",
  "bincode",
  "bytes",
  "futures",
  "serde",
  "tarpc",
+ "thiserror",
  "tokio",
  "tokio-util",
  "web-transport",
