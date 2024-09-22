@@ -9,6 +9,8 @@ use tokio_util::codec::{Decoder, LengthDelimitedCodec};
 use futures::{AsyncRead, Sink, SinkExt, Stream, StreamExt};
 use web_transport::{RecvStream, SendStream, Session};
 
+use crate::log_error;
+
 /*
 /// Internal type representing the identity of a connection between client and server
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -31,7 +33,7 @@ pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -
 
     let (mut readhalf, mut writehalf) = tokio::io::split(proxy);
 
-    tokio::spawn(async move {
+    crate::spawn(log_error(async move {
         loop {
             let mut buf = vec![0_u8; BUFFER_SIZE];
 
@@ -40,21 +42,15 @@ pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -
 
             tx.write(&buf).await?;
         }
+    }));
 
-        #[allow(unreachable_code)]
-        Ok::<_, FrameworkError>(())
-    });
-
-    tokio::spawn(async move {
+    crate::spawn(log_error(async move {
         loop {
             if let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
                 writehalf.write(bytes.as_ref()).await?;
             }
         }
-
-        #[allow(unreachable_code)]
-        Ok::<_, FrameworkError>(())
-    });
+    }));
 
     ret
 }

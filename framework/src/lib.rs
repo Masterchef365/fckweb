@@ -51,8 +51,22 @@ where
 #[cfg(not(target_arch = "wasm32"))]
 pub fn spawn<F>(future: F)
 where
-    F: Future + Send + 'static,
-    F::Output: Send + 'static,
+    F: Future<Output = ()> + Send + 'static,
 {
-    tokio::spawn(future);
+    tokio::spawn(async {
+        future.await;
+    });
+}
+
+/// Consumes the given future returning an anyhow::Result<()> and transforms it into one which logs
+/// the error.
+pub fn log_error<F>(f: F) -> impl Future<Output = ()>
+where
+    F: Future<Output = anyhow::Result<()>>,
+{
+    async {
+        if let Err(e) = f.await {
+            log::error!("{:#}", e);
+        }
+    }
 }
