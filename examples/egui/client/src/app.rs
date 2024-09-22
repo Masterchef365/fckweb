@@ -7,12 +7,8 @@ use framework::tarpc::client::RpcError;
 use poll_promise::Promise;
 use quic_session::web_transport::{RecvStream, SendStream, Session};
 
-struct Connections {
-    sess: Session,
-}
-
 pub struct TemplateApp {
-    conn: Promise<Result<Connections>>,
+    sess: Promise<Result<Session>>,
     received: Vec<String>,
     client: Option<Promise<MyServiceClient>>,
 
@@ -30,9 +26,6 @@ fn spawn<T: Send, F: Future<Output = T> + Send + 'static>(f: F) -> Promise<T> {
 fn spawn<T: Send, F: Future<Output = T> + 'static>(f: F) -> Promise<T> {
     Promise::spawn_local(f)
 }
-
-/// Don't worry about it
-unsafe impl Send for Connections {}
 
 impl TemplateApp {
     /// Called once before the first frame.
@@ -52,7 +45,7 @@ impl TemplateApp {
 
             ctx.request_repaint();
 
-            Ok(Connections { sess })
+            Ok(sess)
         });
 
         Self {
@@ -60,13 +53,13 @@ impl TemplateApp {
             b: 420,
             result: None,
             received: vec![],
-            conn,
+            sess: conn,
             client: None,
         }
     }
 }
 
-fn connection_status(ui: &mut Ui, prom: &Promise<Result<Connections>>) {
+fn connection_status(ui: &mut Ui, prom: &Promise<Result<Session>>) {
     match prom.ready() {
         Some(Ok(_)) => {
             ui.label(format!("Connection open"));
@@ -84,7 +77,7 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            connection_status(ui, &self.conn);
+            connection_status(ui, &self.sess);
             ui.add(DragValue::new(&mut self.a).prefix("a: "));
             ui.add(DragValue::new(&mut self.b).prefix("b: "));
 
@@ -103,12 +96,13 @@ impl eframe::App for TemplateApp {
 
 impl TemplateApp {
     fn open_conn(&mut self, ui: &mut Ui) -> Result<()> {
-        if let Some(Ok(conn)) = self.conn.ready_mut() {
+        if let Some(Ok(sess)) = self.sess.ready_mut() {
             match &mut self.client {
                 None => {
                     ui.label("Opening socket");
 
-                    let mut sess = conn.sess.clone();
+                    let mut sess = sess.clone();
+
                     self.client = Some(Promise::spawn_async(async move {
                         let socks = sess.open_bi().await.unwrap();
                         let channel = framework::io::webtransport_protocol(socks);
