@@ -1266,6 +1266,7 @@ dependencies = [
  "bytes",
  "futures",
  "log",
+ "polyfill-tokio-mem",
  "serde",
  "tarpc",
  "thiserror",
@@ -2418,6 +2419,15 @@ dependencies = [
  "rustix 0.38.37",
  "tracing",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "polyfill-tokio-mem"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "futures",
+ "pin-project-lite",
 ]
 
 [[package]]
