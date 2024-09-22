@@ -1269,6 +1269,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-util",
+ "wasm-bindgen-futures",
  "web-transport",
 ]
 
