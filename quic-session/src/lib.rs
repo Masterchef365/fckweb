@@ -63,7 +63,11 @@ pub async fn client_session(url: &Url, certificate: Vec<u8>) -> Result<web_trans
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub async fn server_endpoint(bind: SocketAddr, certificate: Vec<u8>, key: Vec<u8>) -> Result<quinn::Endpoint> {
+pub async fn server_endpoint(
+    bind: SocketAddr,
+    certificate: Vec<u8>,
+    key: Vec<u8>,
+) -> Result<quinn::Endpoint> {
     // Read the PEM certificate chain
 
     use rustls::pki_types::CertificateDer;

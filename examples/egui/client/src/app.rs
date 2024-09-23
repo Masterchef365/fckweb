@@ -76,7 +76,7 @@ impl eframe::App for TemplateApp {
                 ui.add(DragValue::new(&mut self.a).prefix("a: "));
                 ui.add(DragValue::new(&mut self.b).prefix("b: "));
 
-                let shower = SimpleSpawner::new("adder_id");
+                let spawner = SimpleSpawner::new("adder_id");
 
                 if ui.button("Add").clicked() {
                     let ctx = framework::tarpc::context::current();
@@ -84,10 +84,10 @@ impl eframe::App for TemplateApp {
                     let a = self.a;
                     let b = self.b;
 
-                    shower.spawn(ui, async move { client_clone.add(ctx, a, b).await });
+                    spawner.spawn(ui, async move { client_clone.add(ctx, a, b).await });
                 }
 
-                shower.show(ui, |ui, result| {
+                spawner.show(ui, |ui, result| {
                     match result {
                         Ok(val) => ui.label(format!("Subtract result: {val}")),
                         Err(e) => ui.label(format!("Error: {e:?}")),
@@ -99,6 +99,8 @@ impl eframe::App for TemplateApp {
                 if let Some(prom) = self.other_client.as_mut() {
                     connection_status(ui, prom);
 
+                    let spawner = SimpleSpawner::new("subtractor_id");
+
                     if let Some(Ok(other_client)) = prom.ready_mut() {
                         // Subtracting
                         if ui.button("Subtract").clicked() {
@@ -107,19 +109,15 @@ impl eframe::App for TemplateApp {
                             let a = self.a;
                             let b = self.b;
 
-                            self.subtract_result = Some(Promise::spawn_async(async move {
-                                client_clone.subtract(ctx, a, b).await
-                            }));
+                            spawner.spawn(ui, async move { client_clone.subtract(ctx, a, b).await });
                         }
 
-                        if let Some(result) =
-                            self.subtract_result.as_ref().and_then(|res| res.ready())
-                        {
+                        spawner.show(ui, |ui, result| {
                             match result {
                                 Ok(val) => ui.label(format!("Subtract result: {val}")),
                                 Err(e) => ui.label(format!("Error: {e:?}")),
                             };
-                        }
+                        });
                     }
                 } else {
                     if ui.button("Connect to subtractor").clicked() {
