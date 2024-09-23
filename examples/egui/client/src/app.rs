@@ -3,16 +3,19 @@ use std::future::Future;
 use anyhow::Result;
 use common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
-use framework::tarpc::client::RpcError;
+use framework::{tarpc::client::RpcError, Framework};
 use poll_promise::Promise;
 use quic_session::web_transport::Session;
 
-pub struct TemplateApp {
-    sess: Promise<Result<Session>>,
-    received: Vec<String>,
-    client: Option<Promise<MyServiceClient>>,
+struct Connection {
+    frame: Framework,
+    client: MyServiceClient,
+}
 
-    subconn: Option<Promise<MyOtherServiceClient>>,
+pub struct TemplateApp {
+    sess: Promise<Result<Connection>>,
+    received: Vec<String>,
+    //subconn: Option<Promise<MyOtherServiceClient>>,
 
     a: u32,
     b: u32,
@@ -34,9 +37,14 @@ impl TemplateApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let ctx = cc.egui_ctx.clone();
 
-        let conn = spawn(async move {
+        let sess = spawn(async move {
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
             let sess = quic_session::client_session(&url).await?;
+            let (frame, channel) = Framework::new(sess).await?;
+
+            let newclient = MyServiceClient::new(Default::default(), channel);
+            tokio::task::spawn(newclient.dispatch);
+            let client = newclient.client;
 
             /*
             let (send, recv) = sess
@@ -47,16 +55,18 @@ impl TemplateApp {
 
             ctx.request_repaint();
 
-            Ok(sess)
+            Ok(Connection {
+                frame,
+                client,
+            })
         });
 
         Self {
+            sess,
             a: 69,
             b: 420,
             result: None,
             received: vec![],
-            sess: conn,
-            client: None,
         }
     }
 }
@@ -108,9 +118,6 @@ impl TemplateApp {
                     self.client = Some(Promise::spawn_async(async move {
                         let socks = sess.open_bi().await.unwrap();
                         let channel = framework::io::webtransport_protocol(socks);
-                        let newclient = MyServiceClient::new(Default::default(), channel);
-                        tokio::task::spawn(newclient.dispatch);
-                        newclient.client
                     }));
                 }
                 Some(client) => {

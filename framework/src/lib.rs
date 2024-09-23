@@ -27,7 +27,20 @@ pub struct Framework {
 unsafe impl Send for Framework {}
 
 impl Framework {
-    pub fn new(sess: Session) -> Self {
+    /// Creates a new framework, and offers a root transport
+    pub async fn new<Rx: DeserializeOwned, Tx: Serialize, Client>(
+        mut sess: Session,
+    ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
+    where
+        Client: Stub<Req = Tx, Resp = Rx>,
+    {
+        let socks = sess.open_bi().await?;
+        let channel = crate::io::webtransport_protocol(socks);
+        let inst = Self::new_internal(sess);
+        Ok((inst, channel))
+    }
+
+    fn new_internal(sess: Session) -> Self {
         Self {
             seq: Arc::new(futures::lock::Mutex::new(sess)),
         }
@@ -43,8 +56,9 @@ impl Framework {
     pub async fn connect_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
         &self,
         _token: Subservice<Client>,
-    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError> 
-        where Client: Stub<Req = Tx, Resp = Rx>,
+    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
+    where
+        Client: Stub<Req = Tx, Resp = Rx>,
     {
         // Holds the lock only while we are opening the stream
         let socks = {
