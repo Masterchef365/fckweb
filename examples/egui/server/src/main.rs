@@ -1,12 +1,19 @@
 use anyhow::Result;
 use common::{MyOtherService, MyService};
 use framework::{
-    futures::StreamExt, tarpc::server::{BaseChannel, Channel}, ServerFramework
+    futures::StreamExt,
+    tarpc::server::{BaseChannel, Channel},
+    ServerFramework,
 };
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let endpoint = quic_session::server_endpoint("0.0.0.0:9090".parse().unwrap()).await?;
+    let endpoint = quic_session::server_endpoint(
+        "0.0.0.0:9090".parse().unwrap(),
+        include_bytes!("localhost.crt").to_vec(),
+        include_bytes!("localhost.key").to_vec(),
+    )
+    .await?;
 
     while let Some(inc) = endpoint.accept().await {
         println!("new connection");
@@ -75,5 +82,3 @@ impl MyOtherService for MyOtherServiceServer {
         a.saturating_sub(b)
     }
 }
-
-

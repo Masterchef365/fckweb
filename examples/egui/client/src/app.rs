@@ -32,7 +32,7 @@ impl TemplateApp {
         let sess = Promise::spawn_async(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let sess = quic_session::client_session(&url).await?;
+            let sess = quic_session::client_session(&url, common::CERTIFICATE.to_vec()).await?;
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client

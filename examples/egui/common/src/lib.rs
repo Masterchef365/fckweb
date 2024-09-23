@@ -1,5 +1,8 @@
 use framework::Subservice;
 
+/// TLS certificate (self-signed for debug purposes)
+pub const CERTIFICATE: &[u8] = include_bytes!("localhost.crt");
+
 #[tarpc::service]
 pub trait MyService {
     /// Returns a greeting for name.

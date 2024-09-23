@@ -24,12 +24,12 @@ pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
+pub async fn client_session(url: &Url, certificate: Vec<u8>) -> Result<web_transport::Session> {
     // Read the PEM certificate chain
 
     use rustls::pki_types::CertificateDer;
     //let chain = std::fs::File::open(CERTIFICATE).context("failed to open cert file")?;
-    let mut chain = std::io::Cursor::new(include_bytes!("certs/localhost.crt").to_vec());
+    let mut chain = std::io::Cursor::new(certificate);
 
     let chain: Vec<CertificateDer> = rustls_pemfile::certs(&mut chain)
         .collect::<Result<_, _>>()
@@ -63,12 +63,12 @@ pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub async fn server_endpoint(bind: SocketAddr) -> Result<quinn::Endpoint> {
+pub async fn server_endpoint(bind: SocketAddr, certificate: Vec<u8>, key: Vec<u8>) -> Result<quinn::Endpoint> {
     // Read the PEM certificate chain
 
     use rustls::pki_types::CertificateDer;
     //let chain = std::fs::File::open(CERTIFICATE).context("failed to open cert file")?;
-    let mut chain = std::io::Cursor::new(include_bytes!("certs/localhost.crt").to_vec());
+    let mut chain = std::io::Cursor::new(certificate);
 
     let chain: Vec<CertificateDer> = rustls_pemfile::certs(&mut chain)
         .collect::<Result<_, _>>()
@@ -82,7 +82,7 @@ pub async fn server_endpoint(bind: SocketAddr) -> Result<quinn::Endpoint> {
     // Read the keys into a Vec so we can parse it twice.
     //let mut buf = Vec::new();
     //keys.read_to_end(&mut buf)?;
-    let buf = include_bytes!("certs/localhost.key").to_vec();
+    let buf = key;
 
     // Try to parse a PKCS#8 key
     // -----BEGIN PRIVATE KEY-----
