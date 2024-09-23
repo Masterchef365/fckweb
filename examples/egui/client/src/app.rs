@@ -119,15 +119,19 @@ impl TemplateApp {
 
 
                             let client = client.clone();
+                            /*
                             let a = self.a;
                             let b = self.b;
 
                             self.result = Some(Promise::spawn_async(async move {
                                 client.add(ctx, a, b).await
                             }));
+                            */
 
-                            let ctx = framework::tarpc::context::current();
-                            client.get_sub(ctx).await.unwrap();
+                            Promise::spawn_async(async move {
+                                let ctx = framework::tarpc::context::current();
+                                client.get_sub(ctx).await.unwrap();
+                            });
                         }
                     }
                 }

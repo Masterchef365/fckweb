@@ -8,7 +8,7 @@ use serde::{de::DeserializeOwned, Serialize};
 pub use tarpc;
 
 use tarpc::{
-    client::{NewClient, RequestDispatch},
+    client::{stub::Stub, NewClient, RequestDispatch},
     Transport,
 };
 use web_transport::Session;
@@ -43,7 +43,9 @@ impl Framework {
     pub async fn connect_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
         &self,
         _token: Subservice<Client>,
-    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError> {
+    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError> 
+        where Client: Stub<Req = Tx, Resp = Rx>,
+    {
         // Holds the lock only while we are opening the stream
         let socks = {
             let mut sess = self.seq.lock().await;
