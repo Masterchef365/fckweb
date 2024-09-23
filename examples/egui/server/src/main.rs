@@ -46,14 +46,25 @@ impl MyService for MyServiceServer {
         self,
         context: framework::tarpc::context::Context,
     ) -> framework::Subservice<common::MyOtherServiceClient> {
-        todo!()
+        let (token, channel) = self.framework.accept_subservice().await.unwrap();
+
+        let transport = BaseChannel::with_defaults(channel);
+
+        let server = MyOtherServiceServer;
+        let executor = transport.execute(MyOtherService::serve(server));
+
+        tokio::spawn(executor.for_each(|response| async move {
+            tokio::spawn(response);
+        }));
+
+        token
     }
 }
 
 #[derive(Clone)]
 struct MyOtherServiceServer;
 
-impl MyOtherService for MyServiceServer {
+impl MyOtherService for MyOtherServiceServer {
     async fn subtract(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
         a - b
     }
