@@ -24,22 +24,12 @@ pub struct TemplateApp {
     subtract_result: Option<Promise<Result<u32, RpcError>>>,
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-fn spawn<T: Send, F: Future<Output = T> + Send + 'static>(f: F) -> Promise<T> {
-    Promise::spawn_async(f)
-}
-
-#[cfg(target_arch = "wasm32")]
-fn spawn<T: Send, F: Future<Output = T> + 'static>(f: F) -> Promise<T> {
-    Promise::spawn_local(f)
-}
-
 impl TemplateApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let egui_ctx = cc.egui_ctx.clone();
 
-        let sess = spawn(async move {
+        let sess = Promise::spawn_async(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
             let sess = quic_session::client_session(&url).await?;
@@ -47,19 +37,8 @@ impl TemplateApp {
 
             // Get root client
             let newclient = MyServiceClient::new(Default::default(), channel);
-            tokio::task::spawn(newclient.dispatch);
+            tokio::spawn(newclient.dispatch);
             let client = newclient.client;
-
-            /*
-
-            */
-
-            /*
-            let (send, recv) = sess
-                .open_bi()
-                .await
-                .map_err(|e| anyhow::format_err!("{e}"))?;
-            */
 
             egui_ctx.request_repaint();
 
@@ -144,7 +123,7 @@ impl eframe::App for TemplateApp {
                 } else {
                     if ui.button("Connect to subtractor").clicked() {
                         let sess = sess.clone();
-                        self.other_client = Some(spawn(async move {
+                        self.other_client = Some(Promise::spawn_async(async move {
                             // Call a method on that client, yielding another service!
                             let ctx = framework::tarpc::context::current();
                             let subservice = sess.client.get_sub(ctx).await?;
