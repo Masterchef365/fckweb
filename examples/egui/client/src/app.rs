@@ -1,11 +1,10 @@
 use std::future::Future;
 
 use anyhow::Result;
-use common::{MyOtherServiceClient, MyServiceClient, MyServiceRequest, MyServiceResponse};
+use common::MyServiceClient;
 use egui::{DragValue, Ui};
 use framework::{tarpc::client::RpcError, Framework};
 use poll_promise::Promise;
-use quic_session::web_transport::Session;
 
 struct Connection {
     frame: Framework,
@@ -14,7 +13,6 @@ struct Connection {
 
 pub struct TemplateApp {
     sess: Promise<Result<Connection>>,
-    received: Vec<String>,
     //subconn: Option<Promise<MyOtherServiceClient>>,
 
     a: u32,
@@ -66,7 +64,6 @@ impl TemplateApp {
             a: 69,
             b: 420,
             result: None,
-            received: vec![],
         }
     }
 }
@@ -106,8 +103,6 @@ impl eframe::App for TemplateApp {
                     }));
                 }
 
-                //self.open_conn(ui).unwrap();
-
                 if let Some(result) = self.result.as_ref().and_then(|res| res.ready()) {
                     match result {
                         Ok(val) => ui.label(format!("Result: {val}")),
@@ -118,52 +113,4 @@ impl eframe::App for TemplateApp {
 
         });
     }
-}
-
-impl TemplateApp {
-    /*
-       fn open_conn(&mut self, ui: &mut Ui) -> Result<()> {
-       if let Some(Ok(sess)) = self.sess.ready_mut() {
-       match &mut self.client {
-       None => {
-       ui.label("Opening socket");
-
-       let mut sess = sess.clone();
-
-       self.client = Some(Promise::spawn_async(async move {
-       let socks = sess.open_bi().await.unwrap();
-       let channel = framework::io::webtransport_protocol(socks);
-       }));
-       }
-       Some(client) => {
-       if let Some(client) = client.ready() {
-       let ctx = framework::tarpc::context::current();
-
-       if ui.button("Add").clicked() {
-
-
-       let client_clone = client.clone();
-       let a = self.a;
-       let b = self.b;
-
-       self.result = Some(Promise::spawn_async(async move {
-       client_clone.add(ctx, a, b).await
-       }));
-       }
-
-       if ui.button("Connect subservice").clicked() {
-       let client_clone = client.clone();
-       self.subconn = Some(Promise::spawn_async(async move {
-       let ctx = framework::tarpc::context::current();
-       client_clone.get_sub(ctx).await.unwrap()
-       }));
-       }
-       }
-       }
-       }
-       }
-
-       Ok(())
-       }
-       */
 }

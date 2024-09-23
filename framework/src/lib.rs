@@ -1,14 +1,13 @@
 use std::{marker::PhantomData, sync::Arc};
 
 pub use futures;
-use futures::{Sink, Stream};
 use io::FrameworkError;
 pub use serde;
 use serde::{de::DeserializeOwned, Serialize};
 pub use tarpc;
 
 use tarpc::{
-    client::{stub::Stub, NewClient, RequestDispatch},
+    client::stub::Stub,
     Transport,
 };
 use web_transport::Session;
