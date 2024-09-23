@@ -1,4 +1,7 @@
-use std::future::Future;
+use std::{
+    fmt::{Debug, Display},
+    future::Future,
+};
 
 use anyhow::Result;
 use common::{MyOtherServiceClient, MyServiceClient};
@@ -6,14 +9,15 @@ use egui::{DragValue, Ui};
 use framework::{tarpc::client::RpcError, Framework};
 use poll_promise::Promise;
 
+#[derive(Clone)]
 struct Connection {
     frame: Framework,
     client: MyServiceClient,
-    other_client: MyOtherServiceClient,
 }
 
 pub struct TemplateApp {
     sess: Promise<Result<Connection>>,
+    other_client: Option<Promise<Result<MyOtherServiceClient>>>,
     a: u32,
     b: u32,
     add_result: Option<Promise<Result<u32, RpcError>>>,
@@ -46,13 +50,9 @@ impl TemplateApp {
             tokio::task::spawn(newclient.dispatch);
             let client = newclient.client;
 
-            // Call a method on that client, yielding another service!
-            let ctx = framework::tarpc::context::current();
-            let subservice = client.get_sub(ctx).await?;
-            let other_channel = frame.connect_subservice(subservice).await?;
-            let newclient = MyOtherServiceClient::new(Default::default(), other_channel);
-            tokio::task::spawn(newclient.dispatch);
-            let other_client = newclient.client;
+            /*
+
+            */
 
             /*
             let (send, recv) = sess
@@ -63,7 +63,7 @@ impl TemplateApp {
 
             egui_ctx.request_repaint();
 
-            Ok(Connection { frame, client, other_client })
+            Ok(Connection { frame, client })
         });
 
         Self {
@@ -72,11 +72,12 @@ impl TemplateApp {
             b: 420,
             add_result: None,
             subtract_result: None,
+            other_client: None,
         }
     }
 }
 
-fn connection_status<T: Send>(ui: &mut Ui, prom: &Promise<Result<T>>) {
+fn connection_status<T: Send, E: Debug + Send>(ui: &mut Ui, prom: &Promise<Result<T, E>>) {
     match prom.ready() {
         None => ui.label("Connecting"),
         Some(Ok(_)) => ui.label("Connection open"),
@@ -108,30 +109,53 @@ impl eframe::App for TemplateApp {
 
                 if let Some(result) = self.add_result.as_ref().and_then(|res| res.ready()) {
                     match result {
-                        Ok(val) => ui.label(format!("Result: {val}")),
+                        Ok(val) => ui.label(format!("Add Result: {val}")),
                         Err(e) => ui.label(format!("Error: {e:?}")),
                     };
                 }
 
-                // Subtracting
-                if ui.button("Subtract").clicked() {
-                    let ctx = framework::tarpc::context::current();
-                    let client_clone = sess.other_client.clone();
-                    let a = self.a;
-                    let b = self.b;
+                ui.strong("Subtraction");
 
-                    self.add_result = Some(Promise::spawn_async(async move {
-                        client_clone.subtract(ctx, a, b).await
-                    }));
+                if let Some(prom) = self.other_client.as_mut() {
+                    connection_status(ui, prom);
+
+                    if let Some(Ok(other_client)) = prom.ready_mut() {
+                        // Subtracting
+                        if ui.button("Subtract").clicked() {
+                            let ctx = framework::tarpc::context::current();
+                            let client_clone = other_client.clone();
+                            let a = self.a;
+                            let b = self.b;
+
+                            self.add_result = Some(Promise::spawn_async(async move {
+                                client_clone.subtract(ctx, a, b).await
+                            }));
+                        }
+
+                        if let Some(result) =
+                            self.subtract_result.as_ref().and_then(|res| res.ready())
+                        {
+                            match result {
+                                Ok(val) => ui.label(format!("Subtract result: {val}")),
+                                Err(e) => ui.label(format!("Error: {e:?}")),
+                            };
+                        }
+                    }
+                } else {
+                    if ui.button("Connect to subtractor").clicked() {
+                        let sess = sess.clone();
+                        self.other_client = Some(spawn(async move {
+                            // Call a method on that client, yielding another service!
+                            let ctx = framework::tarpc::context::current();
+                            let subservice = sess.client.get_sub(ctx).await?;
+                            let other_channel = sess.frame.connect_subservice(subservice).await?;
+                            let newclient =
+                                MyOtherServiceClient::new(Default::default(), other_channel);
+                            tokio::task::spawn(newclient.dispatch);
+                            Ok(newclient.client)
+                        }));
+                    }
                 }
-
-                if let Some(result) = self.add_result.as_ref().and_then(|res| res.ready()) {
-                    match result {
-                        Ok(val) => ui.label(format!("Result: {val}")),
-                        Err(e) => ui.label(format!("Error: {e:?}")),
-                    };
-                }
-
             }
         });
     }

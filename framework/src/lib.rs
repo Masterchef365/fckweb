@@ -27,8 +27,6 @@ impl Framework {
     pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(
         mut sess: Session,
     ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
-where
-        //Client: Stub<Req = Tx, Resp = Rx>,
     {
         let socks = sess.open_bi().await?;
         let channel = crate::io::webtransport_protocol(socks);
@@ -41,12 +39,6 @@ where
             seq: Arc::new(futures::lock::Mutex::new(sess)),
         }
     }
-
-    /*
-    pub fn get_next<Request, Response>(&mut self) -> Transporter<Request, Response> {
-        todo!()
-    }
-    */
 
     // TODO: Typecheck that Client's types match Rx/Tx!!
     pub async fn connect_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
@@ -71,30 +63,3 @@ where
 pub struct Subservice<Client> {
     _phantom: PhantomData<Client>,
 }
-
-/*
-trait MyStuff<Request, Response>: Sink<Request, Error = RpcError> + Stream<Item = Response> {}
-
-type Transporter<Request, Response> = Box<dyn MyStuff<Request, Response>>;
-
-impl<Client> Subservice<Client> {
-    /// Here 'F' is the Client::new function, which (because tarpc is dumb) isn't part of a trait.
-    pub fn connect<F, Request, Response>(self, frame: &mut Framework, f: F) -> Client
-    where
-        Request: Send,
-        Response: Send,
-        F: FnOnce(
-            tarpc::client::Config,
-            Transporter<Request, Response>,
-        ) -> NewClient<
-            Self,
-            RequestDispatch<Request, Response, Transporter<Request, Response>>,
-        >
-    {
-        // sue me for using the default here
-        let nc = f(tarpc::client::Config::default(), frame.get_next());
-        tokio::spawn(nc.dispatch);
-        nc.client
-    }
-}
-*/
