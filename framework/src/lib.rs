@@ -54,7 +54,7 @@ where
         _token: Subservice<Client>,
     ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
     where
-        Client: Stub<Req = Tx, Resp = Rx>,
+        //Client: Stub<Req = Tx, Resp = Rx>,
     {
         // Holds the lock only while we are opening the stream
         let socks = {
