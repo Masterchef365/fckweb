@@ -46,16 +46,22 @@ impl MyService for MyServiceServer {
         self,
         context: framework::tarpc::context::Context,
     ) -> framework::Subservice<common::MyOtherServiceClient> {
-        let (token, channel) = self.framework.accept_subservice().await.unwrap();
+        println!("Getting sub, accepting");
+        let (token, channelfuture) = self.framework.accept_subservice();
+        println!("Accepted");
 
-        let transport = BaseChannel::with_defaults(channel);
+        tokio::spawn(async move {
+            let transport = BaseChannel::with_defaults(channelfuture.await?);
 
-        let server = MyOtherServiceServer;
-        let executor = transport.execute(MyOtherService::serve(server));
+            let server = MyOtherServiceServer;
+            let executor = transport.execute(MyOtherService::serve(server));
 
-        tokio::spawn(executor.for_each(|response| async move {
-            tokio::spawn(response);
-        }));
+            tokio::spawn(executor.for_each(|response| async move {
+                tokio::spawn(response);
+            }));
+
+            Ok::<_, anyhow::Error>(())
+        });
 
         token
     }
@@ -66,7 +72,7 @@ struct MyOtherServiceServer;
 
 impl MyOtherService for MyOtherServiceServer {
     async fn subtract(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
-        a - b
+        a.saturating_sub(b)
     }
 }
 

@@ -68,8 +68,8 @@ impl TemplateApp {
 
         Self {
             sess,
-            a: 69,
-            b: 420,
+            a: 420,
+            b: 69,
             add_result: None,
             subtract_result: None,
             other_client: None,
@@ -127,7 +127,7 @@ impl eframe::App for TemplateApp {
                             let a = self.a;
                             let b = self.b;
 
-                            self.add_result = Some(Promise::spawn_async(async move {
+                            self.subtract_result = Some(Promise::spawn_async(async move {
                                 client_clone.subtract(ctx, a, b).await
                             }));
                         }

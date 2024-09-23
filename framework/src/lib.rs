@@ -1,6 +1,7 @@
 use std::{marker::PhantomData, sync::Arc};
 
 pub use futures;
+use futures::Future;
 use io::FrameworkError;
 pub use serde;
 use serde::{de::DeserializeOwned, Serialize};
@@ -32,8 +33,7 @@ impl ClientFramework {
     /// Creates a new framework, and offers a root transport
     pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(
         mut sess: Session,
-    ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
-    {
+    ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError> {
         let socks = sess.open_bi().await?;
         let channel = crate::io::webtransport_protocol(socks);
         let inst = Self::new_internal(sess);
@@ -51,19 +51,21 @@ impl ClientFramework {
         &self,
         _token: Subservice<Client>,
     ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
-    where
+where
         //Client: Stub<Req = Tx, Resp = Rx>,
     {
         // Holds the lock only while we are opening the stream
         let socks = {
             let mut sess = self.seq.lock().await;
-            sess.open_bi().await?
+            println!("Opening");
+            let ret = sess.open_bi().await?;
+            println!("Done Opening");
+            ret
         };
 
         Ok(crate::io::webtransport_protocol(socks))
     }
 }
-
 
 #[derive(Clone)]
 pub struct ServerFramework {
@@ -80,8 +82,7 @@ impl ServerFramework {
     /// Creates a new framework, and offers a root transport
     pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(
         mut sess: Session,
-    ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
-    {
+    ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError> {
         let socks = sess.accept_bi().await?;
         let channel = crate::io::webtransport_protocol(socks);
         let inst = Self::new_internal(sess);
@@ -95,22 +96,27 @@ impl ServerFramework {
     }
 
     // TODO: Typecheck that Client's types match Rx/Tx!!
-    pub async fn accept_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
+    pub fn accept_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
         &self,
-    ) -> Result<(Subservice<Client>, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
-    where
-        //Client: Stub<Req = Tx, Resp = Rx>,
-    {
+    ) -> (
+        Subservice<Client>,
+        impl Future<Output = Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>>,
+    ) {
         // Holds the lock only while we are opening the stream
-        let socks = {
-            let mut sess = self.seq.lock().await;
-            sess.accept_bi().await?
+        let seq = self.seq.clone();
+        let channelfuture = async move {
+            let socks = {
+                let mut sess = seq.lock().await;
+                sess.accept_bi().await?
+            };
+
+            Ok(crate::io::webtransport_protocol(socks))
         };
 
-        let channel = crate::io::webtransport_protocol(socks);
+        let sub = Subservice {
+            _phantom: PhantomData,
+        };
 
-        let sub = Subservice { _phantom: PhantomData };
-
-        Ok((sub, channel))
+        (sub, channelfuture)
     }
 }
