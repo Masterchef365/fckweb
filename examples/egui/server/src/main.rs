@@ -45,4 +45,8 @@ impl MyService for MyServiceServer {
     async fn add(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
         a + b
     }
+
+    async fn get_sub(self,context: framework::tarpc::context::Context,) -> framework::Subservice<common::MyOtherServiceClient> {
+        todo!()
+    }
 }

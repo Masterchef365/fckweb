@@ -1,7 +1,7 @@
 use std::future::Future;
 
 use anyhow::Result;
-use common::MyServiceClient;
+use common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
 use framework::tarpc::client::RpcError;
 use poll_promise::Promise;
@@ -11,6 +11,8 @@ pub struct TemplateApp {
     sess: Promise<Result<Session>>,
     received: Vec<String>,
     client: Option<Promise<MyServiceClient>>,
+
+    subconn: Option<Promise<MyOtherServiceClient>>,
 
     a: u32,
     b: u32,
@@ -118,20 +120,21 @@ impl TemplateApp {
                         if ui.button("Add").clicked() {
 
 
-                            let client = client.clone();
-                            /*
+                            let client_clone = client.clone();
                             let a = self.a;
                             let b = self.b;
 
                             self.result = Some(Promise::spawn_async(async move {
-                                client.add(ctx, a, b).await
+                                client_clone.add(ctx, a, b).await
                             }));
-                            */
+                        }
 
-                            Promise::spawn_async(async move {
+                        if ui.button("Connect subservice").clicked() {
+                            let client_clone = client.clone();
+                            self.subconn = Some(Promise::spawn_async(async move {
                                 let ctx = framework::tarpc::context::current();
-                                client.get_sub(ctx).await.unwrap();
-                            });
+                                client_clone.get_sub(ctx).await.unwrap()
+                            }));
                         }
                     }
                 }
