@@ -14,7 +14,6 @@ struct Connection {
 pub struct TemplateApp {
     sess: Promise<Result<Connection>>,
     //subconn: Option<Promise<MyOtherServiceClient>>,
-
     a: u32,
     b: u32,
     result: Option<Promise<Result<u32, RpcError>>>,
@@ -53,10 +52,7 @@ impl TemplateApp {
 
             ctx.request_repaint();
 
-            Ok(Connection {
-                frame,
-                client,
-            })
+            Ok(Connection { frame, client })
         });
 
         Self {
@@ -70,16 +66,10 @@ impl TemplateApp {
 
 fn connection_status<T: Send>(ui: &mut Ui, prom: &Promise<Result<T>>) {
     match prom.ready() {
-        None => {
-            ui.label(format!("Connecting"));
-        }
-        Some(Ok(_)) => {
-            ui.label(format!("Connection open"));
-        }
-        Some(Err(e)) => {
-            ui.label(format!("Error: {e:?}"));
-        }
-    }
+        None => ui.label("Connecting"),
+        Some(Ok(_)) => ui.label("Connection open"),
+        Some(Err(e)) => ui.label(format!("Error: {e:?}")),
+    };
 }
 
 impl eframe::App for TemplateApp {
@@ -92,7 +82,6 @@ impl eframe::App for TemplateApp {
                 ui.add(DragValue::new(&mut self.b).prefix("b: "));
 
                 if ui.button("Add").clicked() {
-
                     let ctx = framework::tarpc::context::current();
                     let client_clone = sess.client.clone();
                     let a = self.a;
@@ -110,7 +99,6 @@ impl eframe::App for TemplateApp {
                     };
                 }
             }
-
         });
     }
 }

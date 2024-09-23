@@ -92,4 +92,3 @@ pub fn encode<T: Serialize>(value: &T) -> bincode::Result<Vec<u8>> {
 pub fn decode<T: DeserializeOwned>(bytes: &[u8]) -> bincode::Result<T> {
     bincode::deserialize(bytes)
 }
-

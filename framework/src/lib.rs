@@ -6,10 +6,7 @@ pub use serde;
 use serde::{de::DeserializeOwned, Serialize};
 pub use tarpc;
 
-use tarpc::{
-    client::stub::Stub,
-    Transport,
-};
+use tarpc::{client::stub::Stub, Transport};
 use web_transport::Session;
 
 pub mod io;
@@ -30,7 +27,7 @@ impl Framework {
     pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(
         mut sess: Session,
     ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
-    where
+where
         //Client: Stub<Req = Tx, Resp = Rx>,
     {
         let socks = sess.open_bi().await?;

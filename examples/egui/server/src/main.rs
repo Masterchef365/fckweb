@@ -1,6 +1,9 @@
 use anyhow::Result;
 use common::MyService;
-use framework::{futures::StreamExt, tarpc::server::{BaseChannel, Channel}};
+use framework::{
+    futures::StreamExt,
+    tarpc::server::{BaseChannel, Channel},
+};
 use quic_session::web_transport::Session;
 
 #[tokio::main]
@@ -46,7 +49,10 @@ impl MyService for MyServiceServer {
         a + b
     }
 
-    async fn get_sub(self,context: framework::tarpc::context::Context,) -> framework::Subservice<common::MyOtherServiceClient> {
+    async fn get_sub(
+        self,
+        context: framework::tarpc::context::Context,
+    ) -> framework::Subservice<common::MyOtherServiceClient> {
         todo!()
     }
 }
