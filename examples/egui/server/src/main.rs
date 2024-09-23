@@ -1,8 +1,7 @@
 use anyhow::Result;
 use common::{MyOtherService, MyService};
 use framework::{
-    futures::StreamExt,
-    tarpc::server::{BaseChannel, Channel}, ServerFramework,
+    futures::StreamExt, tarpc::server::{BaseChannel, Channel}, ServerFramework
 };
 
 #[tokio::main]
@@ -15,10 +14,10 @@ async fn main() -> Result<()> {
             let sess = quic_session::server_connect(inc).await?;
 
             // Spawn the root service
-            let (frame, channel) = ServerFramework::new(sess).await?;
+            let (framework, channel) = ServerFramework::new(sess).await?;
             let transport = BaseChannel::with_defaults(channel);
 
-            let server = MyServiceServer;
+            let server = MyServiceServer { framework };
             let executor = transport.execute(MyService::serve(server));
 
             tokio::spawn(executor.for_each(|response| async move {
@@ -34,7 +33,9 @@ async fn main() -> Result<()> {
 }
 
 #[derive(Clone)]
-struct MyServiceServer;
+struct MyServiceServer {
+    framework: ServerFramework,
+}
 
 impl MyService for MyServiceServer {
     async fn add(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
