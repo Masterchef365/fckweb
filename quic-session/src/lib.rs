@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::sync::Arc;
-use std::{io::Read, net::SocketAddr};
+use std::net::SocketAddr;
 use url::Url;
 pub use web_transport;
 

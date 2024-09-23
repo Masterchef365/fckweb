@@ -5,7 +5,7 @@ use common::MyServiceClient;
 use egui::{DragValue, Ui};
 use framework::tarpc::client::RpcError;
 use poll_promise::Promise;
-use quic_session::web_transport::{RecvStream, SendStream, Session};
+use quic_session::web_transport::Session;
 
 pub struct TemplateApp {
     sess: Promise<Result<Session>>,
