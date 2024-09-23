@@ -6,12 +6,12 @@ use std::{
 use anyhow::Result;
 use common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
-use framework::{tarpc::client::RpcError, Framework};
+use framework::{tarpc::client::RpcError, ClientFramework};
 use poll_promise::Promise;
 
 #[derive(Clone)]
 struct Connection {
-    frame: Framework,
+    frame: ClientFramework,
     client: MyServiceClient,
 }
 
@@ -43,7 +43,7 @@ impl TemplateApp {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
             let sess = quic_session::client_session(&url).await?;
-            let (frame, channel) = Framework::new(sess).await?;
+            let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client
             let newclient = MyServiceClient::new(Default::default(), channel);

@@ -1,10 +1,9 @@
 use anyhow::Result;
-use common::MyService;
+use common::{MyOtherService, MyService};
 use framework::{
     futures::StreamExt,
-    tarpc::server::{BaseChannel, Channel},
+    tarpc::server::{BaseChannel, Channel}, ServerFramework,
 };
-use quic_session::web_transport::Session;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -14,31 +13,24 @@ async fn main() -> Result<()> {
         println!("new connection");
         tokio::spawn(async move {
             let sess = quic_session::server_connect(inc).await?;
-            handler(sess).await?;
+
+            // Spawn the root service
+            let (frame, channel) = ServerFramework::new(sess).await?;
+            let transport = BaseChannel::with_defaults(channel);
+
+            let server = MyServiceServer;
+            let executor = transport.execute(MyService::serve(server));
+
+            tokio::spawn(executor.for_each(|response| async move {
+                tokio::spawn(response);
+            }));
+
             println!("connection ended");
             Ok::<_, anyhow::Error>(())
         });
     }
 
     Ok(())
-}
-
-async fn handler(mut sess: Session) -> Result<()> {
-    loop {
-        let socks = sess.accept_bi().await?;
-
-        tokio::spawn(async move {
-            let transport = framework::io::webtransport_protocol(socks);
-            let transport = BaseChannel::with_defaults(transport);
-
-            let server = MyServiceServer;
-            let executor = transport.execute(server.serve());
-
-            tokio::spawn(executor.for_each(|response| async move {
-                tokio::spawn(response);
-            }));
-        });
-    }
 }
 
 #[derive(Clone)]
@@ -56,3 +48,14 @@ impl MyService for MyServiceServer {
         todo!()
     }
 }
+
+#[derive(Clone)]
+struct MyOtherServiceServer;
+
+impl MyOtherService for MyServiceServer {
+    async fn subtract(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
+        a - b
+    }
+}
+
+

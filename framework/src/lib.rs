@@ -12,7 +12,7 @@ use web_transport::Session;
 pub mod io;
 
 #[derive(Clone)]
-pub struct Framework {
+pub struct ClientFramework {
     // Ensures each open() occurs in sequence with each accept(). We don't open() until the last
     // one was either completed or failed!
     pub seq: Arc<futures::lock::Mutex<Session>>,
@@ -20,9 +20,9 @@ pub struct Framework {
 
 /// Don't worry about it
 #[cfg(target_arch = "wasm32")]
-unsafe impl Send for Framework {}
+unsafe impl Send for ClientFramework {}
 
-impl Framework {
+impl ClientFramework {
     /// Creates a new framework, and offers a root transport
     pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(
         mut sess: Session,
