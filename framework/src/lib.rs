@@ -28,11 +28,11 @@ unsafe impl Send for Framework {}
 
 impl Framework {
     /// Creates a new framework, and offers a root transport
-    pub async fn new<Rx: DeserializeOwned, Tx: Serialize, Client>(
+    pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(
         mut sess: Session,
     ) -> Result<(Self, impl Transport<Tx, Rx, Error = FrameworkError>), FrameworkError>
     where
-        Client: Stub<Req = Tx, Resp = Rx>,
+        //Client: Stub<Req = Tx, Resp = Rx>,
     {
         let socks = sess.open_bi().await?;
         let channel = crate::io::webtransport_protocol(socks);
