@@ -125,6 +125,9 @@ impl TemplateApp {
                             self.result = Some(Promise::spawn_async(async move {
                                 client.add(ctx, a, b).await
                             }));
+
+                            let ctx = framework::tarpc::context::current();
+                            client.get_sub(ctx).await.unwrap();
                         }
                     }
                 }
