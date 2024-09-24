@@ -24,7 +24,6 @@ pub struct TemplateApp {
     other_client: Option<Promise<Result<MyOtherServiceClient>>>,
     a: u32,
     b: u32,
-    subtract_result: Option<Promise<Result<u32, RpcError>>>,
 }
 
 impl TemplateApp {
@@ -52,7 +51,6 @@ impl TemplateApp {
             sess,
             a: 420,
             b: 69,
-            subtract_result: None,
             other_client: None,
         }
     }
