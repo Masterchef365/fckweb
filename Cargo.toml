@@ -6,6 +6,7 @@ members = [
     "examples/egui/server",
     "examples/egui/client",
     "examples/egui/common",
+    "egui-shortcuts",
 ]
 
 [patch.crates-io]

@@ -1,0 +1,8 @@
+[package]
+name = "egui-shortcuts"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+egui = "0.28"
+poll-promise = { version = "0.3.0", features = ["tokio"] }
