@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData, RoomDescription};
-use egui::{Color32, DragValue, Grid, Key, RichText, TextEdit, Ui};
+use egui::{Color32, DragValue, Grid, Key, RichText, ScrollArea, TextEdit, Ui};
 use egui_shortcuts::SimpleSpawner;
 use framework::{BiStreamProxy, ClientFramework};
 use poll_promise::Promise;
@@ -75,7 +75,7 @@ struct ChatSession {
 }
 
 impl ChatSession {
-    pub fn new(stream: BiStreamProxy<MessageMetaData, MessageMetaData>, name: String,) -> Self {
+    pub fn new(stream: BiStreamProxy<MessageMetaData, MessageMetaData>, name: String) -> Self {
         Self {
             stream,
             received: vec![],
@@ -166,13 +166,12 @@ impl eframe::App for TemplateApp {
                             let ctx = framework::tarpc::context::current();
                             let client_clone = sess.client.clone();
 
-                            rooms_spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
+                            rooms_spawner
+                                .spawn(ui, async move { client_clone.get_rooms(ctx).await });
                         }
                     }
                     ui.text_edit_singleline(&mut self.new_room_name);
                 });
-
-
             });
 
             ui.separator();
@@ -185,32 +184,35 @@ impl eframe::App for TemplateApp {
                         chat_sess.received.push(msg);
                     }
 
-                    for msg in &chat_sess.received {
-                        ui.horizontal(|ui| {
-                            let [r, g, b] = msg.user_color;
-                            ui.label(
-                                RichText::new(&msg.username).color(Color32::from_rgb(r, g, b)),
-                            );
-                            ui.label(&msg.msg);
-                        });
-                    }
-
-                    ui.horizontal(|ui| {
-                        let resp = ui
-                            .add(TextEdit::singleline(&mut self.msg_edit).id("input_line".into()));
-                        let do_submit =
-                            resp.lost_focus() && ui.input(|r| r.key_pressed(Key::Enter));
-
-                        if ui.button("Submit").clicked() || do_submit {
-                            resp.request_focus();
-                            let msg = MessageMetaData {
-                                msg: self.msg_edit.clone(),
-                                username: self.username.clone(),
-                                user_color: [self.color.r(), self.color.g(), self.color.b()],
-                            };
-                            chat_sess.stream.send(msg);
-                            self.msg_edit = "".into();
+                    ScrollArea::vertical().id_salt("msgs").show(ui, |ui| {
+                        for msg in &chat_sess.received {
+                            ui.horizontal(|ui| {
+                                let [r, g, b] = msg.user_color;
+                                ui.label(
+                                    RichText::new(&msg.username).color(Color32::from_rgb(r, g, b)),
+                                );
+                                ui.label(&msg.msg);
+                            });
                         }
+
+                        ui.horizontal(|ui| {
+                            let resp = ui
+                                .add(TextEdit::singleline(&mut self.msg_edit).id("input_line".into()));
+                            let do_submit =
+                                resp.lost_focus() && ui.input(|r| r.key_pressed(Key::Enter));
+
+                            if ui.button("Submit").clicked() || do_submit {
+                                ui.scroll_to_cursor(None);
+                                resp.request_focus();
+                                let msg = MessageMetaData {
+                                    msg: self.msg_edit.clone(),
+                                    username: self.username.clone(),
+                                    user_color: [self.color.r(), self.color.g(), self.color.b()],
+                                };
+                                chat_sess.stream.send(msg);
+                                self.msg_edit = "".into();
+                            }
+                        });
                     });
                 }
                 Err(e) => {
