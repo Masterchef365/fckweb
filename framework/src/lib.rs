@@ -7,7 +7,7 @@ pub use serde;
 use serde::{de::DeserializeOwned, Serialize};
 pub use tarpc;
 
-use tarpc::{client::stub::Stub, Transport};
+use tarpc::Transport;
 use web_transport::Session;
 
 pub mod io;

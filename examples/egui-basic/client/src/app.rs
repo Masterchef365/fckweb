@@ -1,15 +1,9 @@
-use std::{
-    fmt::{Debug, Display},
-    future::Future,
-    hash::Hash,
-    marker::PhantomData,
-    sync::{Arc, Mutex},
-};
+use std::fmt::Debug;
 
 use anyhow::Result;
 use egui_basic_common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
-use framework::{tarpc::client::RpcError, ClientFramework};
+use framework::ClientFramework;
 use poll_promise::Promise;
 use egui_shortcuts::SimpleSpawner;
 
