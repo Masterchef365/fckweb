@@ -112,6 +112,7 @@ impl eframe::App for TemplateApp {
 
                                         rooms_spawner.reset(ui);
 
+                                        let egui_ctx = ui.ctx().clone();
                                         let name = name.clone();
                                         let frame = sess.frame.clone();
                                         chat_spawner.spawn(ui, async move {
@@ -125,6 +126,7 @@ impl eframe::App for TemplateApp {
                                                     stream.next().await.transpose()?
                                                 {
                                                     loop_tx.send(msg)?;
+                                                    egui_ctx.request_repaint();
                                                 }
                                                 Ok::<_, anyhow::Error>(())
                                             });

@@ -23,8 +23,20 @@ async fn main() -> Result<()> {
     )
     .await?;
 
+    let mut shared = SharedData::default();
+    shared
+        .create_room(RoomDescription {
+            name: "Default room".into(),
+            long_desc: "This is the first room!".into(),
+        })
+        .await;
+
+    let shared = Arc::new(TokioMutex::new(shared));
+
     while let Some(inc) = endpoint.accept().await {
         println!("new connection");
+        let shared = shared.clone();
+
         tokio::spawn(async move {
             let sess = quic_session::server_connect(inc).await?;
 
@@ -32,17 +44,7 @@ async fn main() -> Result<()> {
             let (framework, channel) = ServerFramework::new(sess).await?;
             let transport = BaseChannel::with_defaults(channel);
 
-            let server = ChatServer::new(framework);
-
-            server
-                .shared
-                .lock()
-                .await
-                .create_room(RoomDescription {
-                    name: "Default room".into(),
-                    long_desc: "This is the first room!".into(),
-                })
-                .await;
+            let server = ChatServer::new(framework, shared);
 
             let executor = transport.execute(ChatService::serve(server));
 
@@ -79,11 +81,8 @@ struct Room {
 }
 
 impl ChatServer {
-    pub fn new(framework: ServerFramework) -> Self {
-        Self {
-            framework,
-            shared: Default::default(),
-        }
+    pub fn new(framework: ServerFramework, shared: Arc<TokioMutex<SharedData>>) -> Self {
+        Self { framework, shared }
     }
 }
 
