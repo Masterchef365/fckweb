@@ -7,11 +7,12 @@ use std::{
 };
 
 use anyhow::Result;
-use chat_common::ChatServiceClient;
+use chat_common::{ChatServiceClient, MessageMetaData};
 use egui::{DragValue, Grid, Ui};
 use egui_shortcuts::SimpleSpawner;
-use framework::{tarpc::client::RpcError, ClientFramework};
+use framework::{futures::{Sink, StreamExt}, io::FrameworkError, tarpc::client::RpcError, ClientFramework};
 use poll_promise::Promise;
+use tokio::sync::mpsc::Receiver;
 
 #[derive(Clone)]
 struct Connection {
@@ -57,6 +58,11 @@ fn connection_status<T: Send, E: Debug + Send>(ui: &mut Ui, prom: &Promise<Resul
     };
 }
 
+struct ChatSession {
+    tx: Box<dyn Sink<MessageMetaData, Error = FrameworkError>>,
+    rx: Receiver<MessageMetaData>,
+}
+
 impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
@@ -88,8 +94,26 @@ impl eframe::App for TemplateApp {
                                         rooms_spawner.reset(ui);
 
                                         let name = name.clone();
+                                        let frame = sess.frame.clone();
                                         chat_spawner.spawn(ui, async move {
-                                            client_clone.chat(ctx, name).await
+                                            let stream = client_clone.chat(ctx, name).await??;
+                                            let stream = frame.connect_bistream(stream).await?;
+                                            let (sink, stream) = stream.split();
+
+                                            let (tx, rx) = tokio::sync::mpsc::channel(100);
+                                            tokio::spawn(async move {
+                                                while let Some(msg) = stream.next().await.transpose()? {
+                                                    tx.send(msg).await;
+                                                }
+                                                Ok::<_, anyhow::Error>(())
+                                            });
+
+                                            let chat_sess = ChatSession {
+                                                tx: Box::new(sink),
+                                                rx,
+                                            };
+
+                                            Ok::<_, anyhow::Error>(chat_sess)
                                         });
                                     }
                                 });
@@ -103,15 +127,12 @@ impl eframe::App for TemplateApp {
 
                 chat_spawner.show(ui, |ui, result| {
                     match result {
-                        Ok(Ok(stream)) => {
+                        Ok(chat_sess) => {
                             //stream
                         },
                         Err(e) => {
                             ui.label(format!("Error: {e:?}"));
                         },
-                        Ok(Err(e)) => {
-                            ui.label(format!("Error: {e:?}"));
-                        }
                     }
                 });
             }
