@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::Result;
-use chat_common::{ChatServiceClient, MessageMetaData};
+use chat_common::{ChatServiceClient, MessageMetaData, RoomDescription};
 use egui::{Color32, DragValue, Grid, Key, RichText, TextEdit, Ui};
 use egui_shortcuts::SimpleSpawner;
 use framework::{BiStreamProxy, ClientFramework};
@@ -22,6 +22,7 @@ struct Connection {
 
 pub struct TemplateApp {
     sess: Promise<Result<Connection>>,
+    new_room_name: String,
     msg_edit: String,
     username: String,
     color: Color32,
@@ -54,6 +55,7 @@ impl TemplateApp {
             color: Color32::WHITE,
             msg_edit: "".into(),
             username: "my_username".into(),
+            new_room_name: "new_room".into(),
         }
     }
 }
@@ -69,13 +71,15 @@ fn connection_status<T: Send, E: Debug + Send>(ui: &mut Ui, prom: &Promise<Resul
 struct ChatSession {
     stream: BiStreamProxy<MessageMetaData, MessageMetaData>,
     received: Vec<MessageMetaData>,
+    name: String,
 }
 
 impl ChatSession {
-    pub fn new(stream: BiStreamProxy<MessageMetaData, MessageMetaData>) -> Self {
+    pub fn new(stream: BiStreamProxy<MessageMetaData, MessageMetaData>, name: String,) -> Self {
         Self {
             stream,
             received: vec![],
+            name,
         }
     }
 }
@@ -84,11 +88,15 @@ impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.strong("User settings");
             ui.horizontal(|ui| {
                 ui.text_edit_singleline(&mut self.username);
                 ui.color_edit_button_srgba(&mut self.color);
             });
 
+            ui.separator();
+
+            ui.strong("Connection status");
             connection_status(ui, &self.sess);
 
             let Some(Ok(sess)) = self.sess.ready_mut() else {
@@ -103,6 +111,8 @@ impl eframe::App for TemplateApp {
 
                 rooms_spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
             }
+
+            ui.separator();
 
             rooms_spawner.show(ui, |ui, result| {
                 let val = match result {
@@ -127,22 +137,49 @@ impl eframe::App for TemplateApp {
                             let name = name.clone();
                             let frame = sess.frame.clone();
                             chat_spawner.spawn(ui, async move {
-                                let stream = client_clone.chat(ctx, name).await??;
+                                let stream = client_clone.chat(ctx, name.clone()).await??;
                                 let stream = BiStreamProxy::new(stream, frame, move || {
                                     egui_ctx.request_repaint()
                                 })
                                 .await?;
-                                let chat_sess = ChatSession::new(stream);
+                                let chat_sess = ChatSession::new(stream, name);
                                 Ok::<_, anyhow::Error>(chat_sess)
                             });
                         }
                     });
                 }
+
+                ui.horizontal(|ui| {
+                    if ui.button("New room").clicked() {
+                        let ctx = framework::tarpc::context::current();
+                        let client_clone = sess.client.clone();
+                        let desc = RoomDescription {
+                            name: self.new_room_name.clone(),
+                            long_desc: "A new room".into(),
+                        };
+                        tokio::spawn(async move {
+                            client_clone.create_room(ctx, desc).await?;
+                            Ok::<_, anyhow::Error>(())
+                        });
+
+                        {
+                            let ctx = framework::tarpc::context::current();
+                            let client_clone = sess.client.clone();
+
+                            rooms_spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
+                        }
+                    }
+                    ui.text_edit_singleline(&mut self.new_room_name);
+                });
+
+
             });
+
+            ui.separator();
 
             chat_spawner.show(ui, |ui, result| match result {
                 Ok(chat_sess) => {
-                    ui.strong("Connected to chat");
+                    ui.strong(format!("Connected to {}", chat_sess.name));
 
                     for msg in chat_sess.stream.recv_iter() {
                         chat_sess.received.push(msg);
