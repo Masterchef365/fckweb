@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData};
-use egui::{Color32, DragValue, Grid, RichText, Ui};
+use egui::{Color32, DragValue, Grid, Key, RichText, TextEdit, Ui};
 use egui_shortcuts::SimpleSpawner;
 use framework::{BiStreamProxy, ClientFramework};
 use poll_promise::Promise;
@@ -91,89 +91,95 @@ impl eframe::App for TemplateApp {
 
             connection_status(ui, &self.sess);
 
-            if let Some(Ok(sess)) = self.sess.ready_mut() {
-                let rooms_spawner = SimpleSpawner::new("rooms_spawner");
-                let chat_spawner = SimpleSpawner::new("chat_spawner");
+            let Some(Ok(sess)) = self.sess.ready_mut() else {
+                return;
+            };
+            let rooms_spawner = SimpleSpawner::new("rooms_spawner");
+            let chat_spawner = SimpleSpawner::new("chat_spawner");
 
-                if ui.button("Get rooms").clicked() {
-                    let ctx = framework::tarpc::context::current();
-                    let client_clone = sess.client.clone();
+            if ui.button("Get rooms").clicked() {
+                let ctx = framework::tarpc::context::current();
+                let client_clone = sess.client.clone();
 
-                    rooms_spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
-                }
+                rooms_spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
+            }
 
-                rooms_spawner.show(ui, |ui, result| {
-                    match result {
-                        Ok(val) => {
-                            for (name, desc) in val {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!("{name} {}", desc.long_desc));
-
-                                    if ui.button("Connect").clicked() {
-                                        let ctx = framework::tarpc::context::current();
-                                        let client_clone = sess.client.clone();
-
-                                        rooms_spawner.reset(ui);
-
-                                        let egui_ctx = ui.ctx().clone();
-                                        let name = name.clone();
-                                        let frame = sess.frame.clone();
-                                        chat_spawner.spawn(ui, async move {
-                                            let stream = client_clone.chat(ctx, name).await??;
-                                            let stream =
-                                                BiStreamProxy::new(stream, frame, move || {
-                                                    egui_ctx.request_repaint()
-                                                })
-                                                .await?;
-                                            let chat_sess = ChatSession::new(stream);
-                                            Ok::<_, anyhow::Error>(chat_sess)
-                                        });
-                                    }
-                                });
-                            }
-                        }
-                        Err(e) => {
-                            ui.label(format!("Error: {e:?}"));
-                        }
-                    };
-                });
-
-                chat_spawner.show(ui, |ui, result| match result {
-                    Ok(chat_sess) => {
-                        ui.strong("Connected to chat");
-
-                        for msg in chat_sess.stream.recv_iter() {
-                            chat_sess.received.push(msg);
-                        }
-
-                        for msg in &chat_sess.received {
-                            ui.horizontal(|ui| {
-                                let [r, g, b] = msg.user_color;
-                                ui.label(
-                                    RichText::new(&msg.username).color(Color32::from_rgb(r, g, b)),
-                                );
-                                ui.label(&msg.msg);
-                            });
-                        }
-
-                        ui.horizontal(|ui| {
-                            ui.text_edit_singleline(&mut self.msg_edit);
-                            if ui.button("Submit").clicked() {
-                                let msg = MessageMetaData {
-                                    msg: self.msg_edit.clone(),
-                                    username: self.username.clone(),
-                                    user_color: [0xff; 3],
-                                };
-                                chat_sess.stream.send(msg);
-                                self.msg_edit = "".into();
-                            }
-                        });
-                    }
+            rooms_spawner.show(ui, |ui, result| {
+                let val = match result {
+                    Ok(v) => v,
                     Err(e) => {
                         ui.label(format!("Error: {e:?}"));
+                        return;
                     }
-                });
-            }
+                };
+
+                for (name, desc) in val {
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{name} {}", desc.long_desc));
+
+                        if ui.button("Connect").clicked() {
+                            let ctx = framework::tarpc::context::current();
+                            let client_clone = sess.client.clone();
+
+                            rooms_spawner.reset(ui);
+
+                            let egui_ctx = ui.ctx().clone();
+                            let name = name.clone();
+                            let frame = sess.frame.clone();
+                            chat_spawner.spawn(ui, async move {
+                                let stream = client_clone.chat(ctx, name).await??;
+                                let stream = BiStreamProxy::new(stream, frame, move || {
+                                    egui_ctx.request_repaint()
+                                })
+                                .await?;
+                                let chat_sess = ChatSession::new(stream);
+                                Ok::<_, anyhow::Error>(chat_sess)
+                            });
+                        }
+                    });
+                }
+            });
+
+            chat_spawner.show(ui, |ui, result| match result {
+                Ok(chat_sess) => {
+                    ui.strong("Connected to chat");
+
+                    for msg in chat_sess.stream.recv_iter() {
+                        chat_sess.received.push(msg);
+                    }
+
+                    for msg in &chat_sess.received {
+                        ui.horizontal(|ui| {
+                            let [r, g, b] = msg.user_color;
+                            ui.label(
+                                RichText::new(&msg.username).color(Color32::from_rgb(r, g, b)),
+                            );
+                            ui.label(&msg.msg);
+                        });
+                    }
+
+                    ui.horizontal(|ui| {
+                        let resp = ui
+                            .add(TextEdit::singleline(&mut self.msg_edit).id("input_line".into()));
+                        let do_submit =
+                            resp.lost_focus() && ui.input(|r| r.key_pressed(Key::Enter));
+
+                        if ui.button("Submit").clicked() || do_submit {
+                            resp.request_focus();
+                            let msg = MessageMetaData {
+                                msg: self.msg_edit.clone(),
+                                username: self.username.clone(),
+                                user_color: [0xff; 3],
+                            };
+                            chat_sess.stream.send(msg);
+                            self.msg_edit = "".into();
+                        }
+                    });
+                }
+                Err(e) => {
+                    ui.label(format!("Error: {e:?}"));
+                }
+            });
         });
     }
 }
