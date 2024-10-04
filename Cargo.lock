@@ -727,26 +727,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "common",
- "eframe",
- "egui",
- "egui-shortcuts",
- "env_logger",
- "framework",
- "log",
- "poll-promise",
- "quic-session",
- "serde",
- "tokio",
- "url",
- "wasm-bindgen-futures",
-]
-
-[[package]]
 name = "clipboard-win"
 version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1004,6 +984,37 @@ dependencies = [
  "nohash-hasher",
  "ron",
  "serde",
+]
+
+[[package]]
+name = "egui-basic-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "common",
+ "eframe",
+ "egui",
+ "egui-shortcuts",
+ "env_logger",
+ "framework",
+ "log",
+ "poll-promise",
+ "quic-session",
+ "serde",
+ "tokio",
+ "url",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "egui-basic-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "common",
+ "framework",
+ "quic-session",
+ "tokio",
 ]
 
 [[package]]
@@ -2878,17 +2889,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.77",
-]
-
-[[package]]
-name = "server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "common",
- "framework",
- "quic-session",
- "tokio",
 ]
 
 [[package]]
