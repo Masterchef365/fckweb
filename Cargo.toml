@@ -3,9 +3,9 @@ resolver = "2"
 members = [ 
     "quic-session",
     "framework",
-    "examples/egui/server",
-    "examples/egui/client",
-    "examples/egui/common",
+    "examples/egui-basic/server",
+    "examples/egui-basic/client",
+    "examples/egui-basic/common",
     "egui-shortcuts",
 ]
 
