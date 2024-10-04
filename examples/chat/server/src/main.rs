@@ -4,6 +4,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use chat_common::*;
 use framework::futures::{Sink, SinkExt, Stream, TryFutureExt};
+use framework::io::FrameworkError;
 use framework::tarpc::context::Context as TarpcContext;
 use framework::{
     futures::StreamExt,
@@ -22,7 +23,7 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let rooms = Arc::new(TokioMutex::new(vec![]));
+    let shared = Arc::new(TokioMutex::new(SharedData::default()));
 
     while let Some(inc) = endpoint.accept().await {
         println!("new connection");
@@ -59,13 +60,13 @@ struct SharedData {
     rooms: HashMap<String, Arc<TokioMutex<Room>>>,
 }
 
-type MessageSink = Box<dyn Sink<MessageMetaData, Error = ChatError> + Send + Sync + 'static>;
+type MessageSink = Box<dyn Sink<MessageMetaData, Error = FrameworkError> + Send + Sync + Unpin + 'static>;
 
 struct Room {
     desc: RoomDescription,
     messages: Vec<MessageMetaData>,
     connected: Vec<MessageSink>,
-    tx: TokioSender<String>,
+    tx: TokioSender<MessageMetaData>,
 }
 
 impl ChatServer {
@@ -92,7 +93,7 @@ impl ChatService for ChatServer {
         room_name: String,
         username: String,
         user_color: [u8; 3],
-    ) -> Result<framework::BiStream<MessageMetaData, ChatMessage>, ChatError> {
+    ) -> Result<framework::BiStream<MessageMetaData, MessageMetaData>, ChatError> {
         let (handle, streamfut) = self.framework.accept_bistream();
 
         let shared = self.shared.clone();
@@ -100,7 +101,11 @@ impl ChatService for ChatServer {
             let streams = streamfut.await?;
             let (sink, stream) = streams.split();
 
-            let room = shared.lock().await.get_room(&room_name).await?.lock().await;
+            let shared = shared.lock().await;
+            let room = shared.get_room(&room_name).await?;
+            drop(shared);
+            let mut room = room.lock().await;
+            room.connected.push(Box::new(sink));
 
             Ok::<_, anyhow::Error>(())
         });
@@ -115,6 +120,15 @@ impl SharedData {
             .get(room_name)
             .ok_or_else(|| ChatError::RoomDoesNotExist(room_name.to_string()))
             .cloned()
+    }
+
+    async fn create_room(&mut self, desc: RoomDescription) -> bool {
+        if self.rooms.contains_key(&desc.name) {
+            false
+        } else {
+            self.rooms.insert(desc.name.clone(), Room::new(desc).await);
+            true
+        }
     }
 }
 
@@ -134,9 +148,9 @@ impl Room {
         let room = inst.clone();
 
         tokio::spawn(async move {
+            // TODO: This is straightforward but slow!
             while let Some(msg) = rx.recv().await {
-                let lck = room.lock().await;
-                let mut futures = vec![];
+                let mut lck = room.lock().await;
                 for conn in &mut lck.connected {
                     conn.send(msg.clone()).await?;
                 }

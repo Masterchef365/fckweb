@@ -13,14 +13,11 @@ pub struct RoomDescription {
     pub long_desc: String,
 }
 
-pub type ChatMessage = String;
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MessageMetaData {
     pub username: String,
     pub user_color: [u8; 3],
-
-    pub msg: ChatMessage,
+    pub msg: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Error)]
@@ -42,5 +39,5 @@ pub trait ChatService {
         room_name: String,
         username: String,
         user_color: [u8; 3],
-    ) -> BiStream<MessageMetaData, ChatMessage>;
+    ) -> Result<BiStream<MessageMetaData, MessageMetaData>, ChatError>;
 }
