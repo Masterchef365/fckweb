@@ -1,5 +1,5 @@
 use anyhow::Result;
-use egui_basic_common::{MyOtherService, MyService};
+use chat_common::{MyOtherService, MyService};
 use framework::{
     futures::StreamExt,
     tarpc::server::{BaseChannel, Channel},
@@ -52,7 +52,7 @@ impl MyService for MyServiceServer {
     async fn get_sub(
         self,
         context: framework::tarpc::context::Context,
-    ) -> framework::Subservice<egui_basic_common::MyOtherServiceClient> {
+    ) -> framework::Subservice<chat_common::MyOtherServiceClient> {
         println!("Getting sub, accepting");
         let (token, channelfuture) = self.framework.accept_subservice();
         println!("Accepted");

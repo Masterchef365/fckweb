@@ -7,7 +7,7 @@ use std::{
 };
 
 use anyhow::Result;
-use egui_basic_common::{MyOtherServiceClient, MyServiceClient};
+use chat_common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
 use framework::{tarpc::client::RpcError, ClientFramework};
 use poll_promise::Promise;
@@ -34,7 +34,7 @@ impl TemplateApp {
         let sess = Promise::spawn_async(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let sess = quic_session::client_session(&url, egui_basic_common::CERTIFICATE.to_vec()).await?;
+            let sess = quic_session::client_session(&url, chat_common::CERTIFICATE.to_vec()).await?;
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client

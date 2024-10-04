@@ -1,5 +1,5 @@
 [package]
-name = "egui-basic-client"
+name = "chat-client"
 version = "0.1.0"
 edition = "2021"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
@@ -25,7 +25,7 @@ quic-session = { path = "../../../quic-session" }
 framework = { path = "../../../framework" }
 url = "2.5.2"
 anyhow = "1"
-egui-basic-common = { path = "../common" }
+chat-common = { path = "../common" }
 egui-shortcuts = { path = "../../../egui-shortcuts" }
 
 # native:

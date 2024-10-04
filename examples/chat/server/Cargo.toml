@@ -1,5 +1,5 @@
 [package]
-name = "egui-basic-server"
+name = "chat-server"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,5 @@ edition = "2021"
 anyhow = "1"
 quic-session = { path = "../../../quic-session" }
 framework = { path = "../../../framework" }
-egui-basic-common = { path = "../common" }
+chat-common = { path = "../common" }
 tokio = { version = "1.40", features = ["full"] }
