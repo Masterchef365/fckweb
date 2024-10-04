@@ -13,7 +13,10 @@ where
     Rx: DeserializeOwned + Send + Sync + 'static,
     Tx: Serialize + Send + 'static,
 {
-    pub fn new(token: BiStream<Rx, Tx>, frame: ClientFramework) -> Self {
+    pub fn new<F>(token: BiStream<Rx, Tx>, frame: ClientFramework, mut call_on_rx: F) -> Self
+    where
+        F: FnMut() + Send + 'static,
+    {
         let (loop_tx, rx) = std::sync::mpsc::channel();
         let (tx, mut loop_rx) = tokio::sync::mpsc::channel(100);
 
@@ -24,6 +27,7 @@ where
             tokio::spawn(async move {
                 while let Some(msg) = stream.next().await.transpose()? {
                     loop_tx.send(msg)?;
+                    call_on_rx();
                 }
                 Ok::<_, anyhow::Error>(())
             });

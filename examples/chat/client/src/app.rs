@@ -120,7 +120,10 @@ impl eframe::App for TemplateApp {
                                         let frame = sess.frame.clone();
                                         chat_spawner.spawn(ui, async move {
                                             let stream = client_clone.chat(ctx, name).await??;
-                                            let stream = BiStreamProxy::new(stream, frame);
+                                            let stream =
+                                                BiStreamProxy::new(stream, frame, move || {
+                                                    egui_ctx.request_repaint()
+                                                });
                                             let chat_sess = ChatSession::new(stream);
                                             Ok::<_, anyhow::Error>(chat_sess)
                                         });
