@@ -10,12 +10,7 @@ use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData};
 use egui::{Color32, DragValue, Grid, RichText, Ui};
 use egui_shortcuts::SimpleSpawner;
-use framework::{
-    futures::{Sink, SinkExt, StreamExt},
-    io::FrameworkError,
-    tarpc::client::RpcError,
-    ClientFramework,
-};
+use framework::{BiStreamProxy, ClientFramework};
 use poll_promise::Promise;
 use std::sync::mpsc::Receiver;
 
@@ -72,9 +67,17 @@ fn connection_status<T: Send, E: Debug + Send>(ui: &mut Ui, prom: &Promise<Resul
 }
 
 struct ChatSession {
-    tx: tokio::sync::mpsc::Sender<MessageMetaData>,
-    rx: Receiver<MessageMetaData>,
+    stream: BiStreamProxy<MessageMetaData, MessageMetaData>,
     received: Vec<MessageMetaData>,
+}
+
+impl ChatSession {
+    pub fn new(stream: BiStreamProxy<MessageMetaData, MessageMetaData>) -> Self {
+        Self {
+            stream,
+            received: vec![],
+        }
+    }
 }
 
 impl eframe::App for TemplateApp {
@@ -90,7 +93,7 @@ impl eframe::App for TemplateApp {
 
             if let Some(Ok(sess)) = self.sess.ready_mut() {
                 let rooms_spawner = SimpleSpawner::new("rooms_spawner");
-                let chat_spawner = SimpleSpawner::new("rooms_spawner");
+                let chat_spawner = SimpleSpawner::new("chat_spawner");
 
                 if ui.button("Get rooms").clicked() {
                     let ctx = framework::tarpc::context::current();
@@ -117,34 +120,8 @@ impl eframe::App for TemplateApp {
                                         let frame = sess.frame.clone();
                                         chat_spawner.spawn(ui, async move {
                                             let stream = client_clone.chat(ctx, name).await??;
-                                            let stream = frame.connect_bistream(stream).await?;
-                                            let (mut sink, mut stream) = stream.split();
-
-                                            let (loop_tx, rx) = std::sync::mpsc::channel();
-                                            tokio::spawn(async move {
-                                                while let Some(msg) =
-                                                    stream.next().await.transpose()?
-                                                {
-                                                    loop_tx.send(msg)?;
-                                                    egui_ctx.request_repaint();
-                                                }
-                                                Ok::<_, anyhow::Error>(())
-                                            });
-
-                                            let (tx, mut loop_rx) = tokio::sync::mpsc::channel(100);
-                                            tokio::spawn(async move {
-                                                while let Some(msg) = loop_rx.recv().await {
-                                                    sink.send(msg).await?;
-                                                }
-                                                Ok::<_, anyhow::Error>(())
-                                            });
-
-                                            let chat_sess = ChatSession {
-                                                tx,
-                                                rx,
-                                                received: vec![],
-                                            };
-
+                                            let stream = BiStreamProxy::new(stream, frame);
+                                            let chat_sess = ChatSession::new(stream);
                                             Ok::<_, anyhow::Error>(chat_sess)
                                         });
                                     }
@@ -161,7 +138,7 @@ impl eframe::App for TemplateApp {
                     Ok(chat_sess) => {
                         ui.strong("Connected to chat");
 
-                        for msg in chat_sess.rx.try_iter() {
+                        for msg in chat_sess.stream.recv_iter() {
                             chat_sess.received.push(msg);
                         }
 
@@ -178,15 +155,12 @@ impl eframe::App for TemplateApp {
                         ui.horizontal(|ui| {
                             ui.text_edit_singleline(&mut self.msg_edit);
                             if ui.button("Submit").clicked() {
-                                let tx = chat_sess.tx.clone();
                                 let msg = MessageMetaData {
                                     msg: self.msg_edit.clone(),
                                     username: self.username.clone(),
                                     user_color: [0xff; 3],
                                 };
-                                tokio::spawn(async move {
-                                    let _ = tx.send(msg).await;
-                                });
+                                chat_sess.stream.send(msg);
                                 self.msg_edit = "".into();
                             }
                         });

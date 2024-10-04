@@ -11,6 +11,8 @@ use tarpc::Transport;
 use web_transport::Session;
 
 pub mod io;
+mod sync_bistream;
+pub use sync_bistream::BiStreamProxy;
 
 // NOTE: Doesn't implement Clone, since we want to this to be consumed
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
