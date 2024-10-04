@@ -8,11 +8,16 @@ use std::{
 
 use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData};
-use egui::{DragValue, Grid, Ui};
+use egui::{Color32, DragValue, Grid, RichText, Ui};
 use egui_shortcuts::SimpleSpawner;
-use framework::{futures::{Sink, StreamExt}, io::FrameworkError, tarpc::client::RpcError, ClientFramework};
+use framework::{
+    futures::{Sink, StreamExt},
+    io::FrameworkError,
+    tarpc::client::RpcError,
+    ClientFramework,
+};
 use poll_promise::Promise;
-use tokio::sync::mpsc::Receiver;
+use std::sync::mpsc::Receiver;
 
 #[derive(Clone)]
 struct Connection {
@@ -58,9 +63,13 @@ fn connection_status<T: Send, E: Debug + Send>(ui: &mut Ui, prom: &Promise<Resul
     };
 }
 
+type MessageSink =
+    Box<dyn Sink<MessageMetaData, Error = FrameworkError> + Send + Sync + Unpin + 'static>;
+
 struct ChatSession {
-    tx: Box<dyn Sink<MessageMetaData, Error = FrameworkError>>,
+    tx: MessageSink,
     rx: Receiver<MessageMetaData>,
+    received: Vec<MessageMetaData>,
 }
 
 impl eframe::App for TemplateApp {
@@ -98,12 +107,14 @@ impl eframe::App for TemplateApp {
                                         chat_spawner.spawn(ui, async move {
                                             let stream = client_clone.chat(ctx, name).await??;
                                             let stream = frame.connect_bistream(stream).await?;
-                                            let (sink, stream) = stream.split();
+                                            let (sink, mut stream) = stream.split();
 
-                                            let (tx, rx) = tokio::sync::mpsc::channel(100);
+                                            let (tx, rx) = std::sync::mpsc::channel();
                                             tokio::spawn(async move {
-                                                while let Some(msg) = stream.next().await.transpose()? {
-                                                    tx.send(msg).await;
+                                                while let Some(msg) =
+                                                    stream.next().await.transpose()?
+                                                {
+                                                    tx.send(msg)?;
                                                 }
                                                 Ok::<_, anyhow::Error>(())
                                             });
@@ -111,6 +122,7 @@ impl eframe::App for TemplateApp {
                                             let chat_sess = ChatSession {
                                                 tx: Box::new(sink),
                                                 rx,
+                                                received: vec![],
                                             };
 
                                             Ok::<_, anyhow::Error>(chat_sess)
@@ -125,14 +137,24 @@ impl eframe::App for TemplateApp {
                     };
                 });
 
-                chat_spawner.show(ui, |ui, result| {
-                    match result {
-                        Ok(chat_sess) => {
-                            //stream
-                        },
-                        Err(e) => {
-                            ui.label(format!("Error: {e:?}"));
-                        },
+                chat_spawner.show(ui, |ui, result| match result {
+                    Ok(chat_sess) => {
+                        for msg in chat_sess.rx.try_iter() {
+                            chat_sess.received.push(msg);
+                        }
+
+                        for msg in &chat_sess.received {
+                            ui.horizontal(|ui| {
+                                let [r, g, b] = msg.user_color;
+                                ui.label(
+                                    RichText::new(&msg.username).color(Color32::from_rgb(r, g, b)),
+                                );
+                                ui.label(&msg.msg);
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        ui.label(format!("Error: {e:?}"));
                     }
                 });
             }
