@@ -1,4 +1,8 @@
-use std::{future::Future, marker::PhantomData, sync::{Arc, Mutex}};
+use std::{
+    future::Future,
+    marker::PhantomData,
+    sync::{Arc, Mutex},
+};
 
 use egui::Ui;
 use poll_promise::Promise;
@@ -34,6 +38,12 @@ impl<T: Send + 'static> SimpleSpawner<T> {
                 })))),
             );
         });
+    }
+
+    pub fn reset(&self, ui: &mut Ui) {
+        let id = self.id;
+        ui.ctx()
+            .memory_mut(move |w| w.data.remove::<Option<Arc<Mutex<Promise<T>>>>>(id));
     }
 
     pub fn show(&self, ui: &mut Ui, f: impl FnOnce(&mut Ui, &mut T)) {

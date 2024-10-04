@@ -7,11 +7,11 @@ use std::{
 };
 
 use anyhow::Result;
-use chat_common::{ChatServiceClient};
+use chat_common::ChatServiceClient;
 use egui::{DragValue, Grid, Ui};
+use egui_shortcuts::SimpleSpawner;
 use framework::{tarpc::client::RpcError, ClientFramework};
 use poll_promise::Promise;
-use egui_shortcuts::SimpleSpawner;
 
 #[derive(Clone)]
 struct Connection {
@@ -31,7 +31,8 @@ impl TemplateApp {
         let sess = Promise::spawn_async(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let sess = quic_session::client_session(&url, chat_common::CERTIFICATE.to_vec()).await?;
+            let sess =
+                quic_session::client_session(&url, chat_common::CERTIFICATE.to_vec()).await?;
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client
@@ -44,9 +45,7 @@ impl TemplateApp {
             Ok(Connection { frame, client })
         });
 
-        Self {
-            sess,
-        }
+        Self { sess }
     }
 }
 
@@ -65,25 +64,55 @@ impl eframe::App for TemplateApp {
             connection_status(ui, &self.sess);
 
             if let Some(Ok(sess)) = self.sess.ready_mut() {
-                let spawner = SimpleSpawner::new("adder_id");
+                let rooms_spawner = SimpleSpawner::new("rooms_spawner");
+                let chat_spawner = SimpleSpawner::new("rooms_spawner");
+
                 if ui.button("Get rooms").clicked() {
                     let ctx = framework::tarpc::context::current();
                     let client_clone = sess.client.clone();
 
-                    spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
+                    rooms_spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
                 }
 
-                spawner.show(ui, |ui, result| {
+                rooms_spawner.show(ui, |ui, result| {
                     match result {
                         Ok(val) => {
                             for (name, desc) in val {
-                                ui.label(format!("{name} {}", desc.long_desc));
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{name} {}", desc.long_desc));
+
+                                    if ui.button("Connect").clicked() {
+                                        let ctx = framework::tarpc::context::current();
+                                        let client_clone = sess.client.clone();
+
+                                        rooms_spawner.reset(ui);
+
+                                        let name = name.clone();
+                                        chat_spawner.spawn(ui, async move {
+                                            client_clone.chat(ctx, name).await
+                                        });
+                                    }
+                                });
                             }
+                        }
+                        Err(e) => {
+                            ui.label(format!("Error: {e:?}"));
+                        }
+                    };
+                });
+
+                chat_spawner.show(ui, |ui, result| {
+                    match result {
+                        Ok(Ok(stream)) => {
+                            //stream
                         },
                         Err(e) => {
                             ui.label(format!("Error: {e:?}"));
                         },
-                    };
+                        Ok(Err(e)) => {
+                            ui.label(format!("Error: {e:?}"));
+                        }
+                    }
                 });
             }
         });
