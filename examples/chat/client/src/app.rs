@@ -7,8 +7,8 @@ use std::{
 };
 
 use anyhow::Result;
-use chat_common::{MyOtherServiceClient, MyServiceClient};
-use egui::{DragValue, Ui};
+use chat_common::{ChatServiceClient};
+use egui::{DragValue, Grid, Ui};
 use framework::{tarpc::client::RpcError, ClientFramework};
 use poll_promise::Promise;
 use egui_shortcuts::SimpleSpawner;
@@ -16,14 +16,11 @@ use egui_shortcuts::SimpleSpawner;
 #[derive(Clone)]
 struct Connection {
     frame: ClientFramework,
-    client: MyServiceClient,
+    client: ChatServiceClient,
 }
 
 pub struct TemplateApp {
     sess: Promise<Result<Connection>>,
-    other_client: Option<Promise<Result<MyOtherServiceClient>>>,
-    a: u32,
-    b: u32,
 }
 
 impl TemplateApp {
@@ -38,7 +35,7 @@ impl TemplateApp {
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client
-            let newclient = MyServiceClient::new(Default::default(), channel);
+            let newclient = ChatServiceClient::new(Default::default(), channel);
             tokio::spawn(newclient.dispatch);
             let client = newclient.client;
 
@@ -49,9 +46,6 @@ impl TemplateApp {
 
         Self {
             sess,
-            a: 420,
-            b: 69,
-            other_client: None,
         }
     }
 }
@@ -71,68 +65,26 @@ impl eframe::App for TemplateApp {
             connection_status(ui, &self.sess);
 
             if let Some(Ok(sess)) = self.sess.ready_mut() {
-                // Adding
-                ui.add(DragValue::new(&mut self.a).prefix("a: "));
-                ui.add(DragValue::new(&mut self.b).prefix("b: "));
-
                 let spawner = SimpleSpawner::new("adder_id");
-
-                if ui.button("Add").clicked() {
+                if ui.button("Get rooms").clicked() {
                     let ctx = framework::tarpc::context::current();
                     let client_clone = sess.client.clone();
-                    let a = self.a;
-                    let b = self.b;
 
-                    spawner.spawn(ui, async move { client_clone.add(ctx, a, b).await });
+                    spawner.spawn(ui, async move { client_clone.get_rooms(ctx).await });
                 }
 
                 spawner.show(ui, |ui, result| {
                     match result {
-                        Ok(val) => ui.label(format!("Subtract result: {val}")),
-                        Err(e) => ui.label(format!("Error: {e:?}")),
+                        Ok(val) => {
+                            for (name, desc) in val {
+                                ui.label(format!("{name} {}", desc.long_desc));
+                            }
+                        },
+                        Err(e) => {
+                            ui.label(format!("Error: {e:?}"));
+                        },
                     };
                 });
-
-                ui.strong("Subtraction");
-
-                if let Some(prom) = self.other_client.as_mut() {
-                    connection_status(ui, prom);
-
-                    let spawner = SimpleSpawner::new("subtractor_id");
-
-                    if let Some(Ok(other_client)) = prom.ready_mut() {
-                        // Subtracting
-                        if ui.button("Subtract").clicked() {
-                            let ctx = framework::tarpc::context::current();
-                            let client_clone = other_client.clone();
-                            let a = self.a;
-                            let b = self.b;
-
-                            spawner.spawn(ui, async move { client_clone.subtract(ctx, a, b).await });
-                        }
-
-                        spawner.show(ui, |ui, result| {
-                            match result {
-                                Ok(val) => ui.label(format!("Subtract result: {val}")),
-                                Err(e) => ui.label(format!("Error: {e:?}")),
-                            };
-                        });
-                    }
-                } else {
-                    if ui.button("Connect to subtractor").clicked() {
-                        let sess = sess.clone();
-                        self.other_client = Some(Promise::spawn_async(async move {
-                            // Call a method on that client, yielding another service!
-                            let ctx = framework::tarpc::context::current();
-                            let subservice = sess.client.get_sub(ctx).await?;
-                            let other_channel = sess.frame.connect_subservice(subservice).await?;
-                            let newclient =
-                                MyOtherServiceClient::new(Default::default(), other_channel);
-                            tokio::task::spawn(newclient.dispatch);
-                            Ok(newclient.client)
-                        }));
-                    }
-                }
             }
         });
     }
