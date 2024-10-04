@@ -123,7 +123,8 @@ impl eframe::App for TemplateApp {
                                             let stream =
                                                 BiStreamProxy::new(stream, frame, move || {
                                                     egui_ctx.request_repaint()
-                                                });
+                                                })
+                                                .await?;
                                             let chat_sess = ChatSession::new(stream);
                                             Ok::<_, anyhow::Error>(chat_sess)
                                         });
