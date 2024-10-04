@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use chat_common::*;
-use framework::futures::{Sink, SinkExt, Stream, TryFutureExt};
+use framework::futures::{Sink, SinkExt};
 use framework::io::FrameworkError;
 use framework::tarpc::context::Context as TarpcContext;
 use framework::{
@@ -23,8 +23,6 @@ async fn main() -> Result<()> {
     )
     .await?;
 
-    let shared = Arc::new(TokioMutex::new(SharedData::default()));
-
     while let Some(inc) = endpoint.accept().await {
         println!("new connection");
         tokio::spawn(async move {
@@ -35,6 +33,17 @@ async fn main() -> Result<()> {
             let transport = BaseChannel::with_defaults(channel);
 
             let server = ChatServer::new(framework);
+
+            server
+                .shared
+                .lock()
+                .await
+                .create_room(RoomDescription {
+                    name: "Default room".into(),
+                    long_desc: "This is the first room!".into(),
+                })
+                .await;
+
             let executor = transport.execute(ChatService::serve(server));
 
             tokio::spawn(executor.for_each(|response| async move {
@@ -79,11 +88,11 @@ impl ChatServer {
 }
 
 impl ChatService for ChatServer {
-    async fn create_room(self, context: TarpcContext, desc: RoomDescription) -> bool {
+    async fn create_room(self, _context: TarpcContext, desc: RoomDescription) -> bool {
         self.shared.lock().await.create_room(desc).await
     }
 
-    async fn get_rooms(self, context: TarpcContext) -> HashMap<String, RoomDescription> {
+    async fn get_rooms(self, _context: TarpcContext) -> HashMap<String, RoomDescription> {
         let rooms = self.shared.lock().await.rooms.clone(); // note: relatively cheap
         let mut out_rooms = HashMap::new();
         for (name, room) in rooms {
@@ -163,7 +172,6 @@ impl Room {
         tokio::spawn(async move {
             // TODO: This is straightforward but slow!
             while let Some(msg) = rx.recv().await {
-
                 let mut lck = room.lock().await;
                 let mut del_indices = vec![];
 
