@@ -169,7 +169,7 @@ impl eframe::App for TemplateApp {
                             let msg = MessageMetaData {
                                 msg: self.msg_edit.clone(),
                                 username: self.username.clone(),
-                                user_color: [0xff; 3],
+                                user_color: [self.color.r(), self.color.g(), self.color.b()],
                             };
                             chat_sess.stream.send(msg);
                             self.msg_edit = "".into();
