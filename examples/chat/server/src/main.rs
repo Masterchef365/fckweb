@@ -60,11 +60,11 @@ struct SharedData {
     rooms: HashMap<String, Arc<TokioMutex<Room>>>,
 }
 
-type MessageSink = Box<dyn Sink<MessageMetaData, Error = FrameworkError> + Send + Sync + Unpin + 'static>;
+type MessageSink =
+    Box<dyn Sink<MessageMetaData, Error = FrameworkError> + Send + Sync + Unpin + 'static>;
 
 struct Room {
     desc: RoomDescription,
-    messages: Vec<MessageMetaData>,
     connected: Vec<MessageSink>,
     tx: TokioSender<MessageMetaData>,
 }
@@ -80,32 +80,46 @@ impl ChatServer {
 
 impl ChatService for ChatServer {
     async fn create_room(self, context: TarpcContext, desc: RoomDescription) -> bool {
-        todo!()
+        self.shared.lock().await.create_room(desc).await
     }
 
     async fn get_rooms(self, context: TarpcContext) -> HashMap<String, RoomDescription> {
-        todo!()
+        let rooms = self.shared.lock().await.rooms.clone(); // note: relatively cheap
+        let mut out_rooms = HashMap::new();
+        for (name, room) in rooms {
+            out_rooms.insert(name, room.lock().await.desc.clone());
+        }
+        out_rooms
     }
 
     async fn chat(
         self,
-        context: TarpcContext,
+        _context: TarpcContext,
         room_name: String,
-        username: String,
-        user_color: [u8; 3],
     ) -> Result<framework::BiStream<MessageMetaData, MessageMetaData>, ChatError> {
         let (handle, streamfut) = self.framework.accept_bistream();
 
         let shared = self.shared.clone();
         tokio::spawn(async move {
             let streams = streamfut.await?;
-            let (sink, stream) = streams.split();
+            let (sink, mut stream) = streams.split();
 
             let shared = shared.lock().await;
-            let room = shared.get_room(&room_name).await?;
+            let room_arc = shared.get_room(&room_name).await?;
             drop(shared);
-            let mut room = room.lock().await;
+            let mut room = room_arc.lock().await;
             room.connected.push(Box::new(sink));
+
+            let tx = room.tx.clone();
+            drop(room);
+
+            tokio::spawn(async move {
+                while let Some(msg) = stream.next().await.transpose()? {
+                    tx.send(msg).await?;
+                }
+
+                Ok::<_, anyhow::Error>(())
+            });
 
             Ok::<_, anyhow::Error>(())
         });
@@ -140,7 +154,6 @@ impl Room {
             tx,
             desc,
             connected: vec![],
-            messages: Default::default(),
         };
 
         let inst = Arc::new(TokioMutex::new(inst));
@@ -150,9 +163,18 @@ impl Room {
         tokio::spawn(async move {
             // TODO: This is straightforward but slow!
             while let Some(msg) = rx.recv().await {
+
                 let mut lck = room.lock().await;
-                for conn in &mut lck.connected {
-                    conn.send(msg.clone()).await?;
+                let mut del_indices = vec![];
+
+                for (idx, conn) in lck.connected.iter_mut().enumerate() {
+                    if conn.send(msg.clone()).await.is_err() {
+                        del_indices.push(idx);
+                    }
+                }
+
+                while let Some(idx) = del_indices.pop() {
+                    drop(lck.connected.remove(idx));
                 }
             }
 

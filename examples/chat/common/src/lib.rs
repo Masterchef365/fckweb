@@ -37,7 +37,5 @@ pub trait ChatService {
     /// Connects to the given room
     async fn chat(
         room_name: String,
-        username: String,
-        user_color: [u8; 3],
     ) -> Result<BiStream<MessageMetaData, MessageMetaData>, ChatError>;
 }
