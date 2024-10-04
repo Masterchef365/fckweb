@@ -7,3 +7,4 @@ edition = "2021"
 framework = { path = "../../../framework" }
 serde = { version = "1", features = ["derive"] }
 tarpc = { version = "0.34.0", features = ["serde1"] }
+thiserror = "1.0.64"

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use thiserror::Error;
 
 use framework::BiStream;
 use serde::{Deserialize, Serialize};
@@ -22,13 +23,19 @@ pub struct MessageMetaData {
     pub msg: ChatMessage,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, Error)]
+pub enum ChatError {
+    #[error("The requested room does not exist: {0}")]
+    RoomDoesNotExist(String),
+}
+
 #[tarpc::service]
 pub trait ChatService {
     /// Gets the rooms by name
     async fn get_rooms() -> HashMap<String, RoomDescription>;
 
     /// Returns true on success
-    async fn create_room(name: String) -> bool;
+    async fn create_room(desc: RoomDescription) -> bool;
 
     /// Connects to the given room
     async fn chat(
