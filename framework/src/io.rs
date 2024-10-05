@@ -84,6 +84,7 @@ pub enum FrameworkError {
 /// The encoding function for all data. Mostly for internal use, exposed here for debugging
 /// potential
 pub fn encode<T: Serialize>(value: &T) -> bincode::Result<Vec<u8>> {
+    serde_json::to_writer_pretty(std::io::stdout(), value).unwrap();
     bincode::serialize(value)
 }
 

@@ -94,7 +94,7 @@ pub struct ChatApp {
     new_room_name: String,
     msg_edit: String,
     username: String,
-    color: Color32,
+    color: [u8; 3],
 }
 
 impl ChatApp {
@@ -121,7 +121,7 @@ impl ChatApp {
 
         Self {
             sess,
-            color: Color32::WHITE,
+            color: [0xff; 3],
             msg_edit: "".into(),
             username: "my_username".into(),
             new_room_name: "new_room".into(),
@@ -160,7 +160,7 @@ impl eframe::App for ChatApp {
             ui.strong("User settings");
             ui.horizontal(|ui| {
                 ui.text_edit_singleline(&mut self.username);
-                ui.color_edit_button_srgba(&mut self.color);
+                ui.color_edit_button_srgb(&mut self.color);
             });
 
             ui.separator();
@@ -276,7 +276,7 @@ impl eframe::App for ChatApp {
                                 let msg = MessageMetaData {
                                     msg: self.msg_edit.clone(),
                                     username: self.username.clone(),
-                                    user_color: [self.color.r(), self.color.g(), self.color.b()],
+                                    user_color: self.color,
                                 };
                                 chat_sess.stream.send(msg);
                                 self.msg_edit = "".into();

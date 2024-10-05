@@ -17,3 +17,4 @@ thiserror = "1.0.63"
 tokio = { version = "1.40", features = ["full"] }
 tokio-util = { version = "0.7.12", features = ["full"] }
 anyhow = "1"
+serde_json = "1"

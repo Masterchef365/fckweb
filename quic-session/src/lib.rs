@@ -2,6 +2,8 @@ use anyhow::{Context, Result};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
+use quinn::{IdleTimeout, TransportConfig, VarInt};
+
 pub use web_transport;
 
 //const CERTIFICATE: &str = "certs/localhost.crt";
@@ -51,7 +53,9 @@ pub async fn client_session(url: &Url, certificate: Vec<u8>) -> Result<web_trans
     config.alpn_protocols = vec![web_transport_quinn::ALPN.to_vec()]; // this one is important
 
     let config: quinn::crypto::rustls::QuicClientConfig = config.try_into()?;
-    let config = quinn::ClientConfig::new(Arc::new(config));
+    let mut config = quinn::ClientConfig::new(Arc::new(config));
+
+    config.transport_config(transport_config().into()); // Don't disconnect so soon h
 
     let mut client = quinn::Endpoint::client("[::]:0".parse()?)?;
     client.set_default_client_config(config);
@@ -106,7 +110,9 @@ pub async fn server_endpoint(
     config.alpn_protocols = vec![web_transport_quinn::ALPN.to_vec()]; // this one is important
 
     let config: quinn::crypto::rustls::QuicServerConfig = config.try_into()?;
-    let config = quinn::ServerConfig::with_crypto(Arc::new(config));
+    let mut config = quinn::ServerConfig::with_crypto(Arc::new(config));
+
+    config.transport_config(transport_config().into()); // Don't disconnect so soon h
 
     let endpoint = quinn::Endpoint::server(config, bind)?;
 
@@ -121,4 +127,13 @@ pub async fn server_connect(inc: quinn::Incoming) -> Result<web_transport::Sessi
     let session = request.ok().await.context("failed to accept session")?;
 
     Ok(session.into())
+}
+
+fn transport_config() -> TransportConfig {
+    let mut transport_config = TransportConfig::default();
+
+    // Timeout set for 10 days, the default was 30 seconds lol
+    transport_config.max_idle_timeout(Some(IdleTimeout::from(VarInt::from_u32(10 * 24 * 60 * 60 * 1000))));
+
+    transport_config
 }
