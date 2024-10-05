@@ -16,6 +16,9 @@ use tokio::sync::Mutex as TokioMutex;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
+    log::info!("Chat server");
+
     let endpoint = quic_session::server_endpoint(
         "0.0.0.0:9090".parse().unwrap(),
         include_bytes!("localhost.crt").to_vec(),
@@ -34,7 +37,7 @@ async fn main() -> Result<()> {
     let shared = Arc::new(TokioMutex::new(shared));
 
     while let Some(inc) = endpoint.accept().await {
-        println!("new connection");
+        log::info!("New connection");
         let shared = shared.clone();
 
         tokio::spawn(async move {
@@ -52,7 +55,8 @@ async fn main() -> Result<()> {
                 tokio::spawn(response);
             }));
 
-            println!("connection ended");
+            log::info!("Connection ended");
+
             Ok::<_, anyhow::Error>(())
         });
     }
