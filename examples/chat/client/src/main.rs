@@ -129,11 +129,11 @@ impl ChatApp {
     }
 }
 
-fn connection_status<T: Send, E: Debug + Send>(ui: &mut Ui, prom: &Promise<Result<T, E>>) {
+fn connection_status<T: Send, E: Display + Send>(ui: &mut Ui, prom: &Promise<Result<T, E>>) {
     match prom.ready() {
         None => ui.label("Connecting"),
         Some(Ok(_)) => ui.label("Connection open"),
-        Some(Err(e)) => ui.label(format!("Error: {e:?}")),
+        Some(Err(e)) => ui.label(format!("Error: {e:#}")),
     };
 }
 
@@ -187,7 +187,7 @@ impl eframe::App for ChatApp {
                 let val = match result {
                     Ok(v) => v,
                     Err(e) => {
-                        ui.label(format!("Error: {e:?}"));
+                        ui.label(format!("Error: {e:#}"));
                         return;
                     }
                 };
@@ -285,7 +285,7 @@ impl eframe::App for ChatApp {
                     });
                 }
                 Err(e) => {
-                    ui.label(format!("Error: {e:?}"));
+                    ui.label(format!("Error: {e:#}"));
                 }
             });
         });
