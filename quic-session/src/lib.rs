@@ -1,13 +1,31 @@
 use anyhow::{Context, Result};
+use quinn::{IdleTimeout, TransportConfig, VarInt};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
-use quinn::{IdleTimeout, TransportConfig, VarInt};
+use std::future::Future;
 
 pub use web_transport;
 
 //const CERTIFICATE: &str = "certs/localhost.crt";
 //const PRIVATE_KEY: &str = "certs/localhost.key";
+
+#[cfg(target_arch = "wasm32")]
+pub fn spawn<F>(fut: F)
+where
+    F: Future<Output = ()> + 'static,
+{
+    wasm_bindgen_futures::spawn_local(fut)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn spawn<F>(fut: F)
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    tokio::spawn(fut);
+}
 
 #[cfg(target_arch = "wasm32")]
 pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
@@ -133,7 +151,9 @@ fn transport_config() -> TransportConfig {
     let mut transport_config = TransportConfig::default();
 
     // Timeout set for 10 days, the default was 30 seconds lol
-    transport_config.max_idle_timeout(Some(IdleTimeout::from(VarInt::from_u32(10 * 24 * 60 * 60 * 1000))));
+    transport_config.max_idle_timeout(Some(IdleTimeout::from(VarInt::from_u32(
+        10 * 24 * 60 * 60 * 1000,
+    ))));
 
     transport_config
 }
