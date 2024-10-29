@@ -5,7 +5,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use crate::{BiStream, ClientFramework};
 
 pub struct BiStreamProxy<Rx, Tx> {
-    tx: tokio::sync::mpsc::Sender<Tx>,
+    tx: futures::channel::mpsc::UnboundedSender<Tx>,
     rx: std::sync::mpsc::Receiver<Rx>,
 }
 
@@ -23,12 +23,12 @@ where
         F: FnMut() + Send + 'static,
     {
         let (loop_tx, rx) = std::sync::mpsc::channel();
-        let (tx, mut loop_rx) = tokio::sync::mpsc::channel(100);
+        let (tx, mut loop_rx) = futures::channel::mpsc::unbounded();
 
         let stream = frame.connect_bistream(token).await?;
         let (mut sink, mut stream) = stream.split();
 
-        tokio::spawn(async move {
+        crate::spawn(async move {
             while let Some(msg) = stream.next().await.transpose()? {
                 loop_tx.send(msg)?;
                 call_on_rx();
@@ -36,8 +36,8 @@ where
             Ok::<_, anyhow::Error>(())
         });
 
-        tokio::spawn(async move {
-            while let Some(msg) = loop_rx.recv().await {
+        crate::spawn(async move {
+            while let Some(msg) = loop_rx.next().await {
                 sink.send(msg).await?;
             }
             Ok::<_, anyhow::Error>(())
@@ -47,8 +47,8 @@ where
     }
 
     pub fn send(&mut self, val: Tx) {
-        let tx = self.tx.clone();
-        tokio::spawn(async move {
+        let mut tx = self.tx.clone();
+        crate::spawn(async move {
             let _ = tx.send(val).await;
         });
     }

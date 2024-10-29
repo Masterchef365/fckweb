@@ -17,9 +17,9 @@ pub use sync_bistream::BiStreamProxy;
 #[cfg(target_arch = "wasm32")]
 pub fn spawn<F>(fut: F)
 where
-    F: Future<Output = ()> + 'static,
+    F: Future + 'static,
 {
-    wasm_bindgen_futures::spawn_local(fut)
+    wasm_bindgen_futures::spawn_local(async { fut.await; })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
