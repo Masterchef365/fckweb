@@ -1,7 +1,8 @@
 use bytes::Bytes;
+use polyfill_tokio_mem::DuplexStream;
 use serde::{de::DeserializeOwned, Serialize};
 use tarpc::Transport;
-use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
+use futures::io::{AsyncReadExt, AsyncWriteExt};
 use tokio_util::codec::{Decoder, LengthDelimitedCodec};
 
 use futures::{SinkExt, StreamExt};
@@ -29,7 +30,7 @@ pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -
 
     let (mut readhalf, mut writehalf) = tokio::io::split(proxy);
 
-    tokio::spawn(async move {
+    crate::spawn(async move {
         loop {
             let mut buf = vec![0_u8; BUFFER_SIZE];
 
@@ -43,7 +44,7 @@ pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -
         Ok::<_, FrameworkError>(())
     });
 
-    tokio::spawn(async move {
+    crate::spawn(async move {
         loop {
             if let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
                 writehalf.write(bytes.as_ref()).await?;

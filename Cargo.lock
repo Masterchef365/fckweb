@@ -1423,11 +1423,13 @@ dependencies = [
  "bincode",
  "bytes",
  "futures",
+ "polyfill-tokio-mem",
  "serde",
  "serde_json",
  "tarpc",
  "thiserror",
  "tokio",
+ "tokio-util",
  "wasm-bindgen-futures",
  "web-transport",
 ]
@@ -2606,6 +2608,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "polyfill-tokio-mem"
+version = "0.1.0"
+dependencies = [
+ "bytes",
+ "futures",
+ "pin-project-lite",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3387,7 +3398,10 @@ checksum = "61e7c3654c13bcd040d4a03abee2c75b1d14a37b423cf5a813ceae1cc903ec6a"
 dependencies = [
  "bytes",
  "futures-core",
+ "futures-io",
  "futures-sink",
+ "futures-util",
+ "hashbrown 0.14.5",
  "pin-project-lite",
  "slab",
  "tokio",
