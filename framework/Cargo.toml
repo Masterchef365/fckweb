@@ -6,14 +6,15 @@ edition = "2021"
 [dependencies]
 web-transport = "0.6.0"
 serde = { version = "1", features = ["derive"] }
-tarpc = { version = "0.34.0", features = ["serde1"] }
+tarpc = { git = "https://github.com/Masterchef365/tarpc.git", branch = "resolver-trouble", default-features = false }
+#tarpc = { version = "0.34.0", features = ["serde1"], default-features = false }
 futures = "0.3.30"
 bincode = "1.3.3"
 bytes = "1.7.2"
 async-stream = "0.3.5"
 thiserror = "1.0.63"
 
-tokio-util = { version = "0.7.12", features = ["full"] }
+tokio-util = { version = "0.7.12" }
 anyhow = "1"
 serde_json = "1"
 
