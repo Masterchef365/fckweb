@@ -776,8 +776,9 @@ dependencies = [
  "egui-shortcuts",
  "env_logger 0.10.2",
  "framework",
+ "getrandom",
  "log",
- "poll-promise",
+ "poll-promise 0.3.0 (git+https://github.com/Masterchef365/poll-promise.git?branch=wasm)",
  "quic-session",
  "serde",
  "tokio",
@@ -1100,7 +1101,7 @@ dependencies = [
  "env_logger 0.10.2",
  "framework",
  "log",
- "poll-promise",
+ "poll-promise 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "quic-session",
  "serde",
  "tokio",
@@ -1133,7 +1134,7 @@ name = "egui-shortcuts"
 version = "0.1.0"
 dependencies = [
  "egui",
- "poll-promise",
+ "poll-promise 0.3.0 (git+https://github.com/Masterchef365/poll-promise.git?branch=wasm)",
 ]
 
 [[package]]
@@ -1583,8 +1584,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -2569,7 +2572,18 @@ checksum = "5f6a58fecbf9da8965bcdb20ce4fd29788d1acee68ddbb64f0ba1b81bccdb7df"
 dependencies = [
  "document-features",
  "static_assertions",
+]
+
+[[package]]
+name = "poll-promise"
+version = "0.3.0"
+source = "git+https://github.com/Masterchef365/poll-promise.git?branch=wasm#a44859cc5db21a989318d38535f4b5e8487779b4"
+dependencies = [
+ "document-features",
+ "static_assertions",
  "tokio",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -2661,6 +2675,7 @@ dependencies = [
  "rustls-pemfile",
  "tokio",
  "url",
+ "wasm-bindgen-futures",
  "web-sys",
  "web-transport",
  "web-transport-quinn",

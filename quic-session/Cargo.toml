@@ -19,7 +19,7 @@ rustls = "0.23.12"
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-#wasm-bindgen-futures = "0.4"
+wasm-bindgen-futures = "0.4"
 web-transport-wasm = "0.4.0"
 web-sys = { version = "0.3.70", features = [
 "WebTransport",
