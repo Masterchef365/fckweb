@@ -7,6 +7,8 @@ use std::{
 use egui::Ui;
 use poll_promise::Promise;
 
+use crate::spawn_promise;
+
 pub struct SimpleSpawner<T> {
     id: egui::Id,
     _phantom: PhantomData<T>,
@@ -31,7 +33,7 @@ impl<T: Send + 'static> SimpleSpawner<T> {
         ui.ctx().memory_mut(move |w| {
             w.data.insert_temp(
                 id,
-                Some(Arc::new(Mutex::new(Promise::spawn_async(async move {
+                Some(Arc::new(Mutex::new(spawn_promise(async move {
                     let ret = f.await;
                     ctx.request_repaint();
                     ret

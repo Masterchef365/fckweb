@@ -4,6 +4,7 @@ use anyhow::Result;
 use egui_basic_common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
 use framework::ClientFramework;
+use quic_session::spawn;
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
 
@@ -33,7 +34,7 @@ impl TemplateApp {
 
             // Get root client
             let newclient = MyServiceClient::new(Default::default(), channel);
-            tokio::spawn(newclient.dispatch);
+            spawn(newclient.dispatch);
             let client = newclient.client;
 
             egui_ctx.request_repaint();
