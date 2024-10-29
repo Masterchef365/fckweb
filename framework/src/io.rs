@@ -1,8 +1,8 @@
 use bytes::Bytes;
-use polyfill_tokio_mem::DuplexStream;
+//use polyfill_tokio_mem::DuplexStream;
 use serde::{de::DeserializeOwned, Serialize};
 use tarpc::Transport;
-use futures::{io::{AsyncRead, AsyncWrite}, AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, DuplexStream};
 use tokio_util::codec::{Decoder, LengthDelimitedCodec};
 
 use futures::{SinkExt, StreamExt};
@@ -26,9 +26,9 @@ pub struct TarpcBiStream(BiStream);
 /// Converts a webtransport bidirectional connection into a DuplexStream
 /// Warning: spawns tasks underneath
 pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -> DuplexStream {
-    let (proxy, ret) = polyfill_tokio_mem::duplex(BUFFER_SIZE);
+    let (proxy, ret) = tokio::io::duplex(BUFFER_SIZE);
 
-    let (mut readhalf, mut writehalf) = proxy.split();
+    let (mut readhalf, mut writehalf) = tokio::io::split(proxy);
 
     crate::spawn(async move {
         loop {

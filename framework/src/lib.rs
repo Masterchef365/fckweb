@@ -118,10 +118,6 @@ pub struct ServerFramework {
     pub seq: Arc<futures::lock::Mutex<Session>>,
 }
 
-/// Don't worry about it
-#[cfg(target_arch = "wasm32")]
-unsafe impl Send for ClientFramework {}
-
 impl ServerFramework {
     /// Creates a new framework, and offers a root transport
     pub async fn new<Rx: DeserializeOwned, Tx: Serialize>(

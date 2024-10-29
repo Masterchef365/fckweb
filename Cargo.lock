@@ -1423,7 +1423,6 @@ dependencies = [
  "bincode",
  "bytes",
  "futures",
- "polyfill-tokio-mem",
  "serde",
  "serde_json",
  "tarpc 0.34.0 (git+https://github.com/Masterchef365/tarpc.git?branch=resolver-trouble)",
@@ -2642,15 +2641,6 @@ dependencies = [
  "rustix 0.38.37",
  "tracing",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "polyfill-tokio-mem"
-version = "0.1.0"
-dependencies = [
- "bytes",
- "futures",
- "pin-project-lite",
 ]
 
 [[package]]
