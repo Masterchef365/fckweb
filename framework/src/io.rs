@@ -75,11 +75,17 @@ pub enum FrameworkError {
     #[error("Serialization")]
     Bincode(#[from] bincode::Error),
 
-    #[error("Websocket")]
-    WebSocket(#[from] web_transport::Error),
+    #[error("Websocket error {0}")]
+    WebSocket(String),
 
     #[error("Duplex IO")]
     Io(#[from] std::io::Error),
+}
+
+impl From<web_transport::Error> for FrameworkError {
+    fn from(value: web_transport::Error) -> Self {
+        Self::WebSocket(value.to_string())
+    }
 }
 
 /// The encoding function for all data. Mostly for internal use, exposed here for debugging
