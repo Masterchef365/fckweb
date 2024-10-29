@@ -9,10 +9,8 @@ use std::{
 use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData, RoomDescription};
 use egui::{Color32, DragValue, Grid, Key, RichText, ScrollArea, TextEdit, Ui};
-use egui_shortcuts::SimpleSpawner;
+use egui_shortcuts::{SimpleSpawner, Promise};
 use framework::{BiStreamProxy, ClientFramework};
-use poll_promise::Promise;
-use std::sync::mpsc::Receiver;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]

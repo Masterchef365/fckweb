@@ -778,7 +778,6 @@ dependencies = [
  "framework",
  "getrandom",
  "log",
- "poll-promise",
  "quic-session",
  "serde",
  "tokio",
