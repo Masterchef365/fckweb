@@ -4,8 +4,8 @@ use anyhow::Result;
 use egui_basic_common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
 use framework::ClientFramework;
-use poll_promise::Promise;
 use egui_shortcuts::SimpleSpawner;
+use egui_shortcuts::{spawn_promise, Promise};
 
 #[derive(Clone)]
 struct Connection {
@@ -25,7 +25,7 @@ impl TemplateApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let egui_ctx = cc.egui_ctx.clone();
 
-        let sess = Promise::spawn_async(async move {
+        let sess = spawn_promise(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
             let sess = quic_session::client_session(&url, egui_basic_common::CERTIFICATE.to_vec()).await?;

@@ -778,7 +778,7 @@ dependencies = [
  "framework",
  "getrandom",
  "log",
- "poll-promise 0.3.0 (git+https://github.com/Masterchef365/poll-promise.git?branch=wasm)",
+ "poll-promise",
  "quic-session",
  "serde",
  "tokio",
@@ -1101,7 +1101,6 @@ dependencies = [
  "env_logger 0.10.2",
  "framework",
  "log",
- "poll-promise 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "quic-session",
  "serde",
  "tokio",
@@ -1134,7 +1133,7 @@ name = "egui-shortcuts"
 version = "0.1.0"
 dependencies = [
  "egui",
- "poll-promise 0.3.0 (git+https://github.com/Masterchef365/poll-promise.git?branch=wasm)",
+ "poll-promise",
 ]
 
 [[package]]
@@ -2562,16 +2561,6 @@ dependencies = [
  "fdeflate",
  "flate2",
  "miniz_oxide 0.7.4",
-]
-
-[[package]]
-name = "poll-promise"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f6a58fecbf9da8965bcdb20ce4fd29788d1acee68ddbb64f0ba1b81bccdb7df"
-dependencies = [
- "document-features",
- "static_assertions",
 ]
 
 [[package]]
