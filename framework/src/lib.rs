@@ -14,6 +14,23 @@ pub mod io;
 mod sync_bistream;
 pub use sync_bistream::BiStreamProxy;
 
+#[cfg(target_arch = "wasm32")]
+pub fn spawn<F>(fut: F)
+where
+    F: Future<Output = ()> + 'static,
+{
+    wasm_bindgen_futures::spawn_local(fut)
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn spawn<F>(fut: F)
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    tokio::spawn(fut);
+}
+
 // NOTE: Doesn't implement Clone, since we want to this to be consumed
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct BiStream<Rx, Tx> {

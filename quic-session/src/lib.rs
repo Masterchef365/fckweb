@@ -11,23 +11,6 @@ pub use web_transport;
 //const PRIVATE_KEY: &str = "certs/localhost.key";
 
 #[cfg(target_arch = "wasm32")]
-pub fn spawn<F>(fut: F)
-where
-    F: Future<Output = ()> + 'static,
-{
-    wasm_bindgen_futures::spawn_local(fut)
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub fn spawn<F>(fut: F)
-where
-    F: Future + Send + 'static,
-    F::Output: Send + 'static,
-{
-    tokio::spawn(fut);
-}
-
-#[cfg(target_arch = "wasm32")]
 pub async fn client_session(url: &Url) -> Result<web_transport::Session> {
     let hexes = include_bytes!("certs/localhost.hex");
     let hexes: Vec<u8> = hexes
