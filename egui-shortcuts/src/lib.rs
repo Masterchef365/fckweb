@@ -6,7 +6,7 @@ pub use std::future::Future;
 #[cfg(target_arch = "wasm32")]
 pub fn spawn_promise<F>(fut: F) -> Promise<F::Output>
 where
-    F: Future<Output = T> + 'static,
+    F: Future + 'static,
 {
     Promise::spawn_local(fut)
 }
