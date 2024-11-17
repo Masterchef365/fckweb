@@ -104,13 +104,12 @@ impl ChatApp {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
 
-            #[cfg(not(target_arch = "wasm32"))]
-            let sess =
-                quic_session::client_session(&url, chat_common::CERTIFICATE.to_vec()).await?;
-
-            #[cfg(target_arch = "wasm32")]
-            let sess =
-                quic_session::client_session(chat_common::CERTIFICATE_HASHES.to_vec(), &url).await?;
+            let sess = quic_session::client_session(
+                &url,
+                chat_common::CERTIFICATE.to_vec(),
+                chat_common::CERTIFICATE_HASHES.to_vec(),
+            )
+            .await?;
 
             let (frame, channel) = ClientFramework::new(sess).await?;
 
@@ -270,8 +269,9 @@ impl eframe::App for ChatApp {
                         }
 
                         ui.horizontal(|ui| {
-                            let resp = ui
-                                .add(TextEdit::singleline(&mut self.msg_edit).id("input_line".into()));
+                            let resp = ui.add(
+                                TextEdit::singleline(&mut self.msg_edit).id("input_line".into()),
+                            );
                             let do_submit =
                                 resp.lost_focus() && ui.input(|r| r.key_pressed(Key::Enter));
 
