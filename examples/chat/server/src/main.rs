@@ -17,11 +17,22 @@ use tokio::sync::Mutex as TokioMutex;
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
+
+    tokio::spawn(http_server());
+
+    chat_server().await
+}
+
+async fn http_server() -> Result<()> {
+    todo!()
+}
+
+async fn chat_server() -> Result<()> {
     log::info!("Chat server");
 
     let endpoint = quic_session::server_endpoint(
         "0.0.0.0:9090".parse().unwrap(),
-        include_bytes!("localhost.crt").to_vec(),
+        chat_common::CERTIFICATE.to_vec(),
         include_bytes!("localhost.key").to_vec(),
     )
     .await?;
