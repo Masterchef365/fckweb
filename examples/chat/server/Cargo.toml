@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = ["http"]
-http = ["axum-server", "axum"]
+http = ["axum", "tower-http"]
 
 [dependencies]
 chat-common = { path = "../common" }
@@ -18,5 +18,6 @@ tokio = { version = "1.40", features = ["full"] }
 env_logger = "0.11.5"
 log = "0.4"
 #static-web-server = { version = "2.33.1", features = ["directory-listing"], optional = true }
-axum-server = { version = "0.7.1", features = ["tls-rustls-no-provider"], optional = true }
+
+tower-http = { version = "0.6.1", features = ["fs"], optional = true }
 axum = { version = "0.7.9", optional = true }
