@@ -14,17 +14,19 @@ use framework::{
 use tokio::sync::mpsc::Sender as TokioSender;
 use tokio::sync::Mutex as TokioMutex;
 
+pub const DEFINITELY_NOT_THE_PRIVATE_KEY: &[u8] = include_bytes!("localhost.key");
+
+#[cfg(feature = "http")]
+mod http;
+
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
 
-    tokio::spawn(http_server());
+    #[cfg(feature = "http")]
+    tokio::spawn(http::http_server());
 
     chat_server().await
-}
-
-async fn http_server() -> Result<()> {
-    todo!()
 }
 
 async fn chat_server() -> Result<()> {
@@ -33,7 +35,7 @@ async fn chat_server() -> Result<()> {
     let endpoint = quic_session::server_endpoint(
         "0.0.0.0:9090".parse().unwrap(),
         chat_common::CERTIFICATE.to_vec(),
-        include_bytes!("localhost.key").to_vec(),
+        DEFINITELY_NOT_THE_PRIVATE_KEY.to_vec(),
     )
     .await?;
 
