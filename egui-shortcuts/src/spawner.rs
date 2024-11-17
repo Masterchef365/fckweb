@@ -23,6 +23,7 @@ impl<T: Send + 'static> SimpleSpawner<T> {
     }
 
     /// Spawns the task, requesting repaint on finish. Saves to temporary memory.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn spawn<F>(&self, ui: &mut Ui, f: F)
     where
         F: Future<Output = T> + Send + 'static,
@@ -41,6 +42,28 @@ impl<T: Send + 'static> SimpleSpawner<T> {
             );
         });
     }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn spawn<F>(&self, ui: &mut Ui, f: F)
+    where
+        F: Future<Output = T> + 'static,
+        F::Output: Send
+    {
+        let ctx = ui.ctx().clone();
+
+        let id = self.id;
+        ui.ctx().memory_mut(move |w| {
+            w.data.insert_temp(
+                id,
+                Some(Arc::new(Mutex::new(spawn_promise(async move {
+                    let ret = f.await;
+                    ctx.request_repaint();
+                    ret
+                })))),
+            );
+        });
+    }
+
 
     pub fn reset(&self, ui: &mut Ui) {
         let id = self.id;
