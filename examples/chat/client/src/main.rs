@@ -9,7 +9,7 @@ use std::{
 use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData, RoomDescription};
 use egui::{Color32, DragValue, Grid, Key, RichText, ScrollArea, TextEdit, Ui};
-use egui_shortcuts::{SimpleSpawner, Promise};
+use egui_shortcuts::{spawn_promise, Promise, SimpleSpawner};
 use framework::{BiStreamProxy, ClientFramework};
 
 // When compiling natively:
@@ -100,16 +100,23 @@ impl ChatApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let egui_ctx = cc.egui_ctx.clone();
 
-        let sess = Promise::spawn_async(async move {
+        let sess = spawn_promise(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
+
+            #[cfg(not(target_arch = "wasm32"))]
             let sess =
                 quic_session::client_session(&url, chat_common::CERTIFICATE.to_vec()).await?;
+
+            #[cfg(target_arch = "wasm32")]
+            let sess =
+                quic_session::client_session(chat_common::CERTIFICATE_HASHES.to_vec(), &url).await?;
+
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client
             let newclient = ChatServiceClient::new(Default::default(), channel);
-            tokio::spawn(newclient.dispatch);
+            framework::spawn(newclient.dispatch);
             let client = newclient.client;
 
             egui_ctx.request_repaint();
@@ -224,7 +231,7 @@ impl eframe::App for ChatApp {
                             name: self.new_room_name.clone(),
                             long_desc: "A new room".into(),
                         };
-                        tokio::spawn(async move {
+                        framework::spawn(async move {
                             client_clone.create_room(ctx, desc).await?;
                             Ok::<_, anyhow::Error>(())
                         });

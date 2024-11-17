@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 /// TLS certificate (self-signed for debug purposes)
 pub const CERTIFICATE: &[u8] = include_bytes!("localhost.crt");
+pub const CERTIFICATE_HASHES: &[u8] = include_bytes!("localhost.hex");
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RoomDescription {

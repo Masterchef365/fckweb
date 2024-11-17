@@ -16,5 +16,6 @@ openssl x509 -in localhost.crt -outform der | openssl dgst -sha256 -binary | xxd
 popd
 
 cp ./certs/localhost.crt ./common/src/
+cp ./certs/localhost.hex ./common/src/
 cp ./certs/localhost.crt ./server/src/
 cp ./certs/localhost.key ./server/src/

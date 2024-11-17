@@ -7,6 +7,7 @@ pub use std::future::Future;
 pub fn spawn_promise<F>(fut: F) -> Promise<F::Output>
 where
     F: Future + 'static,
+    F::Output: Send
 {
     Promise::spawn_local(fut)
 }
