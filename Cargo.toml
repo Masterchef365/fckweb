@@ -13,4 +13,4 @@ members = [
 [patch.crates-io]
 #egui = { git = "https://github.com/emilk/egui.git", rev = "f4ed394" }
 #eframe = { git = "https://github.com/emilk/egui.git", rev = "f4ed394" }
-tarpc = { git = "https://github.com/Masterchef365/tarpc.git", branch = "resolver-trouble", features = ["serde1"], default-features = false }
+#tarpc = { git = "https://github.com/Masterchef365/tarpc.git", branch = "resolver-trouble", features = ["serde1"], default-features = false }
