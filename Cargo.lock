@@ -1137,45 +1137,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui-basic-client"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "eframe",
- "egui",
- "egui-basic-common",
- "egui-shortcuts",
- "env_logger 0.10.2",
- "framework",
- "log",
- "quic-session",
- "serde",
- "tokio",
- "url",
- "wasm-bindgen-futures",
-]
-
-[[package]]
-name = "egui-basic-common"
-version = "0.1.0"
-dependencies = [
- "framework",
- "serde",
- "tarpc",
-]
-
-[[package]]
-name = "egui-basic-server"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "egui-basic-common",
- "framework",
- "quic-session",
- "tokio",
-]
-
-[[package]]
 name = "egui-shortcuts"
 version = "0.1.0"
 dependencies = [

@@ -1,9 +1,0 @@
-[package]
-name = "egui-basic-common"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-framework = { path = "../../../framework" }
-serde = { version = "1", features = ["derive"] }
-tarpc = { version = "0.34.0", features = ["serde1"] }
