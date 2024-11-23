@@ -83,9 +83,9 @@ where
         // Holds the lock only while we are opening the stream
         let socks = {
             let mut sess = self.seq.lock().await;
-            println!("Opening");
+            //println!("Opening");
             let ret = sess.open_bi().await?;
-            println!("Done Opening");
+            //println!("Done Opening");
             ret
         };
 
@@ -101,9 +101,9 @@ where
         // Holds the lock only while we are opening the stream
         let socks = {
             let mut sess = self.seq.lock().await;
-            println!("Opening");
+            //println!("Opening");
             let ret = sess.open_bi().await?;
-            println!("Done Opening");
+            //println!("Done Opening");
             ret
         };
 
