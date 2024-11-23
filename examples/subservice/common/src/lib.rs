@@ -6,7 +6,7 @@ pub const CERTIFICATE_HASHES: &[u8] = include_bytes!("localhost.hex");
 
 #[tarpc::service]
 pub trait MyService {
-    /// Returns a greeting for name.
+    /// Adds numbers
     async fn add(a: u32, b: u32) -> u32;
 
     /// Returns a sub-service
@@ -15,6 +15,6 @@ pub trait MyService {
 
 #[tarpc::service]
 pub trait MyOtherService {
-    /// Returns a greeting for name.
+    /// Subtracts numbers
     async fn subtract(a: u32, b: u32) -> u32;
 }

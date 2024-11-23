@@ -80,7 +80,7 @@ impl ClientFramework {
     }
 
     // TODO: Typecheck that Client's types match Rx/Tx!!
-    pub fn accept_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
+    pub fn accept_reverse_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
         &self,
     ) -> (
         OfferedService<Client>,
@@ -167,7 +167,7 @@ impl ServerFramework {
     }
 
     // TODO: Typecheck that Client's types match Rx/Tx!!
-    pub async fn connect_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
+    pub async fn connect_reverse_service<Rx: DeserializeOwned, Tx: Serialize, Client>(
         &self,
         _token: OfferedService<Client>,
     ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
