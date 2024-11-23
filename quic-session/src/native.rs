@@ -4,7 +4,11 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
 
-pub async fn client_session(url: &Url, certificate: Vec<u8>, certificate_hashes: Vec<u8>) -> Result<web_transport::Session> {
+pub async fn client_session(
+    url: &Url,
+    certificate: Vec<u8>,
+    _certificate_hashes: Vec<u8>,
+) -> Result<web_transport::Session> {
     // Read the PEM certificate chain
 
     use rustls::pki_types::CertificateDer;

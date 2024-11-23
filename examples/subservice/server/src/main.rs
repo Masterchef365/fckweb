@@ -1,10 +1,13 @@
 use anyhow::Result;
-use subservice_common::{MyOtherService, MyService};
 use framework::{
     futures::StreamExt,
-    tarpc::{self, server::{BaseChannel, Channel}},
+    tarpc::{
+        self,
+        server::{BaseChannel, Channel},
+    },
     ServerFramework,
 };
+use subservice_common::{MyOtherService, MyService};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -51,7 +54,7 @@ impl MyService for MyServiceServer {
 
     async fn get_sub(
         self,
-        context: tarpc::context::Context,
+        _context: tarpc::context::Context,
     ) -> framework::Subservice<subservice_common::MyOtherServiceClient> {
         println!("Getting sub, accepting");
         let (token, channelfuture) = self.framework.accept_subservice();

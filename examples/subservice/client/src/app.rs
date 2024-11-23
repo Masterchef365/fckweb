@@ -1,11 +1,11 @@
 use std::fmt::Debug;
 
 use anyhow::Result;
-use subservice_common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
-use framework::{tarpc, ClientFramework};
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
+use framework::{tarpc, ClientFramework};
+use subservice_common::{MyOtherServiceClient, MyServiceClient};
 
 #[derive(Clone)]
 struct Connection {
@@ -28,7 +28,12 @@ impl TemplateApp {
         let sess = spawn_promise(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let sess = quic_session::client_session(&url, subservice_common::CERTIFICATE.to_vec(), subservice_common::CERTIFICATE_HASHES.to_vec()).await?;
+            let sess = quic_session::client_session(
+                &url,
+                subservice_common::CERTIFICATE.to_vec(),
+                subservice_common::CERTIFICATE_HASHES.to_vec(),
+            )
+            .await?;
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client
@@ -102,7 +107,8 @@ impl eframe::App for TemplateApp {
                             let a = self.a;
                             let b = self.b;
 
-                            spawner.spawn(ui, async move { client_clone.subtract(ctx, a, b).await });
+                            spawner
+                                .spawn(ui, async move { client_clone.subtract(ctx, a, b).await });
                         }
 
                         spawner.show(ui, |ui, result| {

@@ -19,7 +19,9 @@ pub fn spawn<F>(fut: F)
 where
     F: Future + 'static,
 {
-    wasm_bindgen_futures::spawn_local(async { fut.await; })
+    wasm_bindgen_futures::spawn_local(async {
+        fut.await;
+    })
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -36,7 +38,6 @@ where
 pub struct BiStream<Rx, Tx> {
     _phantom: PhantomData<(Rx, Tx)>,
 }
-
 
 // NOTE: Doesn't implement Clone, since we want to this to be consumed
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -96,8 +97,7 @@ where
     pub async fn connect_bistream<Rx: DeserializeOwned, Tx: Serialize>(
         &self,
         _token: BiStream<Rx, Tx>,
-    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
-    {
+    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError> {
         // Holds the lock only while we are opening the stream
         let socks = {
             let mut sess = self.seq.lock().await;

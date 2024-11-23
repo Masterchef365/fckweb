@@ -1,14 +1,8 @@
-use std::{
-    fmt::{Debug, Display},
-    future::Future,
-    hash::Hash,
-    marker::PhantomData,
-    sync::{Arc, Mutex},
-};
+use std::fmt::Display;
 
 use anyhow::Result;
 use chat_common::{ChatServiceClient, MessageMetaData, RoomDescription};
-use egui::{Color32, DragValue, Grid, Key, RichText, ScrollArea, TextEdit, Ui};
+use egui::{Color32, Key, RichText, ScrollArea, TextEdit, Ui};
 use egui_shortcuts::{spawn_promise, Promise, SimpleSpawner};
 use framework::{BiStreamProxy, ClientFramework};
 

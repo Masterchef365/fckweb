@@ -47,7 +47,7 @@ impl<T: Send + 'static> SimpleSpawner<T> {
     pub fn spawn<F>(&self, ui: &mut Ui, f: F)
     where
         F: Future<Output = T> + 'static,
-        F::Output: Send
+        F::Output: Send,
     {
         let ctx = ui.ctx().clone();
 
@@ -63,7 +63,6 @@ impl<T: Send + 'static> SimpleSpawner<T> {
             );
         });
     }
-
 
     pub fn reset(&self, ui: &mut Ui) {
         let id = self.id;
