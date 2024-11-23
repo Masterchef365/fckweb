@@ -7,13 +7,13 @@ use framework::{
     },
     ServerFramework,
 };
-use subservice_common::{MyOtherService, MyService};
+use reverse_common::{MyOtherService, MyService};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let endpoint = quic_session::server_endpoint(
         "0.0.0.0:9090".parse().unwrap(),
-        subservice_common::CERTIFICATE.to_vec(),
+        reverse_common::CERTIFICATE.to_vec(),
         include_bytes!("localhost.key").to_vec(),
     )
     .await?;
@@ -55,7 +55,7 @@ impl MyService for MyServiceServer {
     async fn get_sub(
         self,
         _context: tarpc::context::Context,
-    ) -> framework::Subservice<subservice_common::MyOtherServiceClient> {
+    ) -> framework::Subservice<reverse_common::MyOtherServiceClient> {
         println!("Getting sub, accepting");
         let (token, channelfuture) = self.framework.accept_subservice();
         println!("Accepted");

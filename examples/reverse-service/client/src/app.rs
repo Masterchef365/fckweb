@@ -5,7 +5,7 @@ use egui::{DragValue, Ui};
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
 use framework::{tarpc, ClientFramework};
-use subservice_common::{MyOtherServiceClient, MyServiceClient};
+use reverse_common::{MyOtherServiceClient, MyServiceClient};
 
 #[derive(Clone)]
 struct Connection {
@@ -30,8 +30,8 @@ impl TemplateApp {
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
             let sess = quic_session::client_session(
                 &url,
-                subservice_common::CERTIFICATE.to_vec(),
-                subservice_common::CERTIFICATE_HASHES.to_vec(),
+                reverse_common::CERTIFICATE.to_vec(),
+                reverse_common::CERTIFICATE_HASHES.to_vec(),
             )
             .await?;
             let (frame, channel) = ClientFramework::new(sess).await?;

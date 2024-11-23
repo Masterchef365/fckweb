@@ -7,5 +7,5 @@ edition = "2021"
 anyhow = "1"
 quic-session = { path = "../../../quic-session" }
 framework = { path = "../../../framework" }
-subservice-common = { path = "../common" }
+reverse-common = { path = "../common" }
 tokio = { version = "1.40", features = ["full"] }

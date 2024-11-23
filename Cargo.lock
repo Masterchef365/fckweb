@@ -2907,6 +2907,45 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 
 [[package]]
+name = "reverse-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "egui",
+ "egui-shortcuts",
+ "env_logger 0.10.2",
+ "framework",
+ "log",
+ "quic-session",
+ "reverse-common",
+ "serde",
+ "tokio",
+ "url",
+ "wasm-bindgen-futures",
+]
+
+[[package]]
+name = "reverse-common"
+version = "0.1.0"
+dependencies = [
+ "framework",
+ "serde",
+ "tarpc",
+]
+
+[[package]]
+name = "reverse-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "framework",
+ "quic-session",
+ "reverse-common",
+ "tokio",
+]
+
+[[package]]
 name = "ring"
 version = "0.17.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
