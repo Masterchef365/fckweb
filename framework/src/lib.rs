@@ -45,6 +45,12 @@ pub struct Subservice<Client> {
     _phantom: PhantomData<Client>,
 }
 
+// NOTE: Doesn't implement Clone, since we want to this to be consumed
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct OfferedService<Client> {
+    _phantom: PhantomData<Client>,
+}
+
 #[derive(Clone)]
 pub struct ClientFramework {
     // Ensures each open() occurs in sequence with each accept(). We don't open() until the last
@@ -71,6 +77,31 @@ impl ClientFramework {
         Self {
             seq: Arc::new(futures::lock::Mutex::new(sess)),
         }
+    }
+
+    // TODO: Typecheck that Client's types match Rx/Tx!!
+    pub fn accept_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
+        &self,
+    ) -> (
+        OfferedService<Client>,
+        impl Future<Output = Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>>,
+    ) {
+        // Holds the lock only while we are opening the stream
+        let seq = self.seq.clone();
+        let channelfuture = async move {
+            let socks = {
+                let mut sess = seq.lock().await;
+                sess.accept_bi().await?
+            };
+
+            Ok(crate::io::webtransport_protocol(socks))
+        };
+
+        let sub = OfferedService {
+            _phantom: PhantomData,
+        };
+
+        (sub, channelfuture)
     }
 
     // TODO: Typecheck that Client's types match Rx/Tx!!
@@ -133,6 +164,26 @@ impl ServerFramework {
         Self {
             seq: Arc::new(futures::lock::Mutex::new(sess)),
         }
+    }
+
+    // TODO: Typecheck that Client's types match Rx/Tx!!
+    pub async fn connect_subservice<Rx: DeserializeOwned, Tx: Serialize, Client>(
+        &self,
+        _token: OfferedService<Client>,
+    ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
+    where
+        //Client: Stub<Req = Tx, Resp = Rx>,
+    {
+        // Holds the lock only while we are opening the stream
+        let socks = {
+            let mut sess = self.seq.lock().await;
+            //println!("Opening");
+            let ret = sess.open_bi().await?;
+            //println!("Done Opening");
+            ret
+        };
+
+        Ok(crate::io::webtransport_protocol(socks))
     }
 
     // TODO: Typecheck that Client's types match Rx/Tx!!
