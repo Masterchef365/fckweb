@@ -1,0 +1,11 @@
+[package]
+name = "reverse-server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+quic-session = { path = "../../../quic-session" }
+framework = { path = "../../../framework" }
+subservice-common = { path = "../common" }
+tokio = { version = "1.40", features = ["full"] }

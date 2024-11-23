@@ -1,0 +1,9 @@
+[package]
+name = "reverse-common"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+framework = { path = "../../../framework" }
+serde = { version = "1", features = ["derive"] }
+tarpc = { git = "https://github.com/Masterchef365/tarpc.git", branch = "resolver-trouble", features = ["serde1"], default-features = false }
