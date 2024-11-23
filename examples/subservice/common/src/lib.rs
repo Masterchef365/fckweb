@@ -2,6 +2,7 @@ use framework::Subservice;
 
 /// TLS certificate (self-signed for debug purposes)
 pub const CERTIFICATE: &[u8] = include_bytes!("localhost.crt");
+pub const CERTIFICATE_HASHES: &[u8] = include_bytes!("localhost.hex");
 
 #[tarpc::service]
 pub trait MyService {

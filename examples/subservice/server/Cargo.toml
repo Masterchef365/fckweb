@@ -7,5 +7,5 @@ edition = "2021"
 anyhow = "1"
 quic-session = { path = "../../../quic-session" }
 framework = { path = "../../../framework" }
-egui-basic-common = { path = "../common" }
+subservice-common = { path = "../common" }
 tokio = { version = "1.40", features = ["full"] }

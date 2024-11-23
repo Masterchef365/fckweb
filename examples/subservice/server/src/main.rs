@@ -1,8 +1,8 @@
 use anyhow::Result;
-use egui_basic_common::{MyOtherService, MyService};
+use subservice_common::{MyOtherService, MyService};
 use framework::{
     futures::StreamExt,
-    tarpc::server::{BaseChannel, Channel},
+    tarpc::{self, server::{BaseChannel, Channel}},
     ServerFramework,
 };
 
@@ -10,7 +10,7 @@ use framework::{
 async fn main() -> Result<()> {
     let endpoint = quic_session::server_endpoint(
         "0.0.0.0:9090".parse().unwrap(),
-        include_bytes!("localhost.crt").to_vec(),
+        subservice_common::CERTIFICATE.to_vec(),
         include_bytes!("localhost.key").to_vec(),
     )
     .await?;
@@ -45,14 +45,14 @@ struct MyServiceServer {
 }
 
 impl MyService for MyServiceServer {
-    async fn add(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
+    async fn add(self, _context: tarpc::context::Context, a: u32, b: u32) -> u32 {
         a + b
     }
 
     async fn get_sub(
         self,
-        context: framework::tarpc::context::Context,
-    ) -> framework::Subservice<egui_basic_common::MyOtherServiceClient> {
+        context: tarpc::context::Context,
+    ) -> framework::Subservice<subservice_common::MyOtherServiceClient> {
         println!("Getting sub, accepting");
         let (token, channelfuture) = self.framework.accept_subservice();
         println!("Accepted");
@@ -78,7 +78,7 @@ impl MyService for MyServiceServer {
 struct MyOtherServiceServer;
 
 impl MyOtherService for MyOtherServiceServer {
-    async fn subtract(self, _context: framework::tarpc::context::Context, a: u32, b: u32) -> u32 {
+    async fn subtract(self, _context: tarpc::context::Context, a: u32, b: u32) -> u32 {
         a.saturating_sub(b)
     }
 }

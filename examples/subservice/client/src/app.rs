@@ -1,10 +1,9 @@
 use std::fmt::Debug;
 
 use anyhow::Result;
-use egui_basic_common::{MyOtherServiceClient, MyServiceClient};
+use subservice_common::{MyOtherServiceClient, MyServiceClient};
 use egui::{DragValue, Ui};
-use framework::ClientFramework;
-use quic_session::spawn;
+use framework::{tarpc, ClientFramework};
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
 
@@ -29,12 +28,12 @@ impl TemplateApp {
         let sess = spawn_promise(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let sess = quic_session::client_session(&url, egui_basic_common::CERTIFICATE.to_vec()).await?;
+            let sess = quic_session::client_session(&url, subservice_common::CERTIFICATE.to_vec(), subservice_common::CERTIFICATE_HASHES.to_vec()).await?;
             let (frame, channel) = ClientFramework::new(sess).await?;
 
             // Get root client
             let newclient = MyServiceClient::new(Default::default(), channel);
-            spawn(newclient.dispatch);
+            framework::spawn(newclient.dispatch);
             let client = newclient.client;
 
             egui_ctx.request_repaint();
@@ -73,7 +72,7 @@ impl eframe::App for TemplateApp {
                 let spawner = SimpleSpawner::new("adder_id");
 
                 if ui.button("Add").clicked() {
-                    let ctx = framework::tarpc::context::current();
+                    let ctx = tarpc::context::current();
                     let client_clone = sess.client.clone();
                     let a = self.a;
                     let b = self.b;
@@ -98,7 +97,7 @@ impl eframe::App for TemplateApp {
                     if let Some(Ok(other_client)) = prom.ready_mut() {
                         // Subtracting
                         if ui.button("Subtract").clicked() {
-                            let ctx = framework::tarpc::context::current();
+                            let ctx = tarpc::context::current();
                             let client_clone = other_client.clone();
                             let a = self.a;
                             let b = self.b;
@@ -118,7 +117,7 @@ impl eframe::App for TemplateApp {
                         let sess = sess.clone();
                         self.other_client = Some(Promise::spawn_async(async move {
                             // Call a method on that client, yielding another service!
-                            let ctx = framework::tarpc::context::current();
+                            let ctx = tarpc::context::current();
                             let subservice = sess.client.get_sub(ctx).await?;
                             let other_channel = sess.frame.connect_subservice(subservice).await?;
                             let newclient =

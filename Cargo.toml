@@ -6,6 +6,9 @@ members = [
     "examples/chat/server",
     "examples/chat/client",
     "examples/chat/common",
+    "examples/subservice/server",
+    "examples/subservice/client",
+    "examples/subservice/common",
     "egui-shortcuts",
     "egui-shortcuts",
 ]

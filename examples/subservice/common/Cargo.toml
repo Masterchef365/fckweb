@@ -1,9 +1,9 @@
 [package]
-name = "egui-basic-common"
+name = "subservice-common"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 framework = { path = "../../../framework" }
 serde = { version = "1", features = ["derive"] }
-tarpc = { version = "0.34.0", features = ["serde1"] }
+tarpc = { git = "https://github.com/Masterchef365/tarpc.git", branch = "resolver-trouble", features = ["serde1"], default-features = false }
