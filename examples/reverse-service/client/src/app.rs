@@ -1,10 +1,13 @@
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use anyhow::Result;
 use egui::{DragValue, Ui};
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
-use framework::futures::StreamExt;
+use framework::futures::channel::mpsc::{Receiver, Sender};
+use framework::futures::lock::Mutex as FuturesMutex;
+use framework::futures::{SinkExt, StreamExt};
 use framework::tarpc::server::{BaseChannel, Channel};
 use framework::{tarpc, ClientFramework};
 use reverse_common::{MyOtherService, MyOtherServiceClient, MyServiceClient};
@@ -18,6 +21,7 @@ struct Connection {
 pub struct TemplateApp {
     sess: Promise<Result<Connection>>,
     offer: SimpleSpawner<Result<()>>,
+    log: Arc<FuturesMutex<Vec<String>>>,
 }
 
 impl TemplateApp {
@@ -48,6 +52,7 @@ impl TemplateApp {
 
         Self {
             sess,
+            log: Default::default(),
             offer: SimpleSpawner::new("offer"),
         }
     }
@@ -69,32 +74,44 @@ impl eframe::App for TemplateApp {
 
             if let Some(Ok(sess)) = self.sess.ready_mut() {
                 let conn = sess.clone();
-                self.offer.spawn(ui, async move {
-                    let ctx = tarpc::context::current();
-                    let (token, channelfuture) = conn.frame.accept_reverse_subservice();
-                    conn.client.offer(ctx, token).await?;
+                let log = self.log.clone();
+                if ui.button("Offer service").clicked() {
+                    self.offer.spawn(ui, async move {
+                        let ctx = tarpc::context::current();
+                        let (token, channelfuture) = conn.frame.accept_reverse_subservice();
+                        conn.client.offer(ctx, token).await?;
 
-                    framework::spawn(async move {
-                        let transport = BaseChannel::with_defaults(channelfuture.await?);
+                        framework::spawn(async move {
+                            let transport = BaseChannel::with_defaults(channelfuture.await?);
 
-                        let server = MyOtherServiceServer;
-                        let executor = transport.execute(MyOtherService::serve(server));
+                            let server = MyOtherServiceServer { log };
+                            let executor = transport.execute(MyOtherService::serve(server));
 
-                        framework::spawn(executor.for_each(|response| async move {
-                            framework::spawn(response);
-                        }));
+                            framework::spawn(executor.for_each(|response| async move {
+                                framework::spawn(response);
+                            }));
 
-                        Ok::<_, anyhow::Error>(())
+                            Ok::<_, anyhow::Error>(())
+                        });
+
+                        Ok(())
                     });
-
-                    Ok(())
-                });
+                }
             }
 
             self.offer.show(ui, |ui, result| {
                 match result {
-                    Ok(()) => ui.label(format!("Connected.")),
-                    Err(e) => ui.label(format!("Error: {e:?}")),
+                    Ok(()) => {
+                        ui.strong(format!("Connected."));
+                        if let Some(lck) = self.log.try_lock() {
+                            for entry in lck.iter() {
+                                ui.label(entry);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        ui.label(format!("Error: {e:?}"));
+                    }
                 };
             });
         });
@@ -102,10 +119,14 @@ impl eframe::App for TemplateApp {
 }
 
 #[derive(Clone)]
-struct MyOtherServiceServer;
+struct MyOtherServiceServer {
+    log: Arc<FuturesMutex<Vec<String>>>,
+}
 
 impl MyOtherService for MyOtherServiceServer {
     async fn subtract(self, _context: tarpc::context::Context, a: u32, b: u32) -> u32 {
-        a.saturating_sub(b)
+        let result = a.saturating_sub(b);
+        self.log.lock().await.push(format!("{a} - {b} = {result}"));
+        result
     }
 }
