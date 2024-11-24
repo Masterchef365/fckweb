@@ -7,7 +7,7 @@ use framework::{
     },
     ServerFramework,
 };
-use reverse_common::{MyOtherService, MyService};
+use reverse_common::{MyOtherService, MyOtherServiceClient, MyService};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -48,40 +48,17 @@ struct MyServiceServer {
 }
 
 impl MyService for MyServiceServer {
-    async fn add(self, _context: tarpc::context::Context, a: u32, b: u32) -> u32 {
-        a + b
-    }
-
-    async fn get_sub(
+    async fn offer(
         self,
-        _context: tarpc::context::Context,
-    ) -> framework::Subservice<reverse_common::MyOtherServiceClient> {
-        println!("Getting sub, accepting");
-        let (token, channelfuture) = self.framework.accept_subservice();
-        println!("Accepted");
+        context: tarpc::context::Context,
+        token: framework::OfferedService<MyOtherServiceClient>,
+    ) {
+        let transport = self.framework.connect_reverse_service(token).await.unwrap();
+        let newclient =
+            MyOtherServiceClient::new(Default::default(), transport);
+        tokio::task::spawn(newclient.dispatch);
 
-        tokio::spawn(async move {
-            let transport = BaseChannel::with_defaults(channelfuture.await?);
-
-            let server = MyOtherServiceServer;
-            let executor = transport.execute(MyOtherService::serve(server));
-
-            tokio::spawn(executor.for_each(|response| async move {
-                tokio::spawn(response);
-            }));
-
-            Ok::<_, anyhow::Error>(())
-        });
-
-        token
-    }
-}
-
-#[derive(Clone)]
-struct MyOtherServiceServer;
-
-impl MyOtherService for MyOtherServiceServer {
-    async fn subtract(self, _context: tarpc::context::Context, a: u32, b: u32) -> u32 {
-        a.saturating_sub(b)
+        let client = newclient.client;
+        let _ = dbg!(client.subtract(context, 10, 5).await);
     }
 }
