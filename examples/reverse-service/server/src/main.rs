@@ -54,11 +54,12 @@ impl MyService for MyServiceServer {
         token: framework::OfferedService<MyOtherServiceClient>,
     ) {
         let transport = self.framework.connect_reverse_service(token).await.unwrap();
-        let newclient =
-            MyOtherServiceClient::new(Default::default(), transport);
-        tokio::task::spawn(newclient.dispatch);
+        tokio::spawn(async move {
+            let newclient = MyOtherServiceClient::new(Default::default(), transport);
+            tokio::task::spawn(newclient.dispatch);
 
-        let client = newclient.client;
-        let _ = dbg!(client.subtract(context, 10, 5).await);
+            let client = newclient.client;
+            let _ = dbg!(client.subtract(context, 10, 7).await);
+        });
     }
 }
