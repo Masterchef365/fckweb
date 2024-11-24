@@ -4,6 +4,8 @@ use anyhow::Result;
 use egui::{DragValue, Ui};
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
+use framework::futures::StreamExt;
+use framework::tarpc::server::{BaseChannel, Channel};
 use framework::{tarpc, ClientFramework};
 use reverse_common::{MyOtherService, MyOtherServiceClient, MyServiceClient};
 
@@ -68,9 +70,23 @@ impl eframe::App for TemplateApp {
             if let Some(Ok(sess)) = self.sess.ready_mut() {
                 self.offer.spawn(ui, async move {
                     let ctx = tarpc::context::current();
-                    let (token, future) = sess.frame.accept_reverse_subservice();
-                    framework::spawn(future);
-                    sess.client.offer(ctx, token);
+                    let (token, channelfuture) = sess.frame.accept_reverse_subservice();
+                    sess.client.offer(ctx, token).await?;
+
+                    framework::spawn(async move {
+                        let transport = BaseChannel::with_defaults(channelfuture.await?);
+
+                        let server = MyOtherServiceServer;
+                        let executor = transport.execute(MyOtherService::serve(server));
+
+                        framework::spawn(executor.for_each(|response| async move {
+                            framework::spawn(response);
+                        }));
+
+                        Ok::<_, anyhow::Error>(())
+                    });
+
+                    Ok(())
                 });
             }
         });
