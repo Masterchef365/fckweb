@@ -68,10 +68,11 @@ impl eframe::App for TemplateApp {
             connection_status(ui, &self.sess);
 
             if let Some(Ok(sess)) = self.sess.ready_mut() {
+                let conn = sess.clone();
                 self.offer.spawn(ui, async move {
                     let ctx = tarpc::context::current();
-                    let (token, channelfuture) = sess.frame.accept_reverse_subservice();
-                    sess.client.offer(ctx, token).await?;
+                    let (token, channelfuture) = conn.frame.accept_reverse_subservice();
+                    conn.client.offer(ctx, token).await?;
 
                     framework::spawn(async move {
                         let transport = BaseChannel::with_defaults(channelfuture.await?);
