@@ -90,6 +90,13 @@ impl eframe::App for TemplateApp {
                     Ok(())
                 });
             }
+
+            self.offer.show(ui, |ui, result| {
+                match result {
+                    Ok(()) => ui.label(format!("Connected.")),
+                    Err(e) => ui.label(format!("Error: {e:?}")),
+                };
+            });
         });
     }
 }
