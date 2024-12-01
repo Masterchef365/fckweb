@@ -1,6 +1,6 @@
 mod spawner;
 pub use poll_promise::Promise;
-pub use spawner::SimpleSpawner;
+pub use spawner::{SimpleSpawner, SpawnerState};
 pub use std::future::Future;
 
 #[cfg(target_arch = "wasm32")]

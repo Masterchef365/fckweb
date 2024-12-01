@@ -14,11 +14,35 @@ pub struct SimpleSpawner<T> {
     _phantom: PhantomData<T>,
 }
 
+type Container<T> = Option<Arc<Mutex<Promise<T>>>>;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SpawnerState {
+    Waiting,
+    Loading,
+    Done,
+}
+
 impl<T: Send + 'static> SimpleSpawner<T> {
     pub fn new(id: impl Into<egui::Id>) -> Self {
         Self {
             id: id.into(),
             _phantom: PhantomData,
+        }
+    }
+
+    pub fn get_state(&self, ui: &mut Ui) -> SpawnerState {
+        let val = ui
+            .ctx()
+            .memory_mut(|w| w.data.get_temp::<Container<T>>(self.id).clone().unwrap());
+
+        let Some(val) = val else {
+            return SpawnerState::Waiting;
+        };
+        if val.lock().unwrap().ready().is_some() {
+            SpawnerState::Done
+        } else {
+            SpawnerState::Loading
         }
     }
 
@@ -67,20 +91,20 @@ impl<T: Send + 'static> SimpleSpawner<T> {
     pub fn reset(&self, ui: &mut Ui) {
         let id = self.id;
         ui.ctx()
-            .memory_mut(move |w| w.data.remove::<Option<Arc<Mutex<Promise<T>>>>>(id));
+            .memory_mut(move |w| w.data.remove::<Container<T>>(id));
     }
 
     pub fn show(&self, ui: &mut Ui, f: impl FnOnce(&mut Ui, &mut T)) {
         if ui
             .ctx()
-            .memory(|w| w.data.get_temp::<Option<Arc<Mutex<Promise<T>>>>>(self.id))
+            .memory(|w| w.data.get_temp::<Container<T>>(self.id))
             .is_none()
         {
             ui.label("Value not set.");
         } else {
             let val = ui.ctx().memory_mut(|w| {
                 w.data
-                    .get_temp_mut_or_default::<Option<Arc<Mutex<Promise<T>>>>>(self.id)
+                    .get_temp_mut_or_default::<Container<T>>(self.id)
                     .clone()
                     .unwrap()
             });
