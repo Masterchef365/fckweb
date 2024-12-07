@@ -18,8 +18,11 @@ type Container<T> = Option<Arc<Mutex<Promise<T>>>>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SpawnerState {
+    /// We are waiting for spawn() to be called
     Waiting,
+    /// The spawn event is still running
     Loading,
+    /// The spawned task has returned and the spawner is displaying the result
     Done,
 }
 
@@ -34,15 +37,18 @@ impl<T: Send + 'static> SimpleSpawner<T> {
     pub fn get_state(&self, ui: &mut Ui) -> SpawnerState {
         let val = ui
             .ctx()
-            .memory_mut(|w| w.data.get_temp::<Container<T>>(self.id).clone().unwrap());
+            .memory_mut(|w| w.data.get_temp::<Container<T>>(self.id).clone());
 
-        let Some(val) = val else {
-            return SpawnerState::Waiting;
-        };
-        if val.lock().unwrap().ready().is_some() {
-            SpawnerState::Done
-        } else {
-            SpawnerState::Loading
+        match val {
+            None => SpawnerState::Waiting,
+            Some(None) => SpawnerState::Waiting,
+            Some(Some(state)) => {
+                if state.lock().unwrap().ready().is_some() {
+                    SpawnerState::Done
+                } else {
+                    SpawnerState::Loading
+                }
+            }
         }
     }
 
