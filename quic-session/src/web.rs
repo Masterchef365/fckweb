@@ -14,9 +14,9 @@ pub async fn client_session(
         .map(|chunk| u8::from_str_radix(&String::from_utf8(chunk.to_vec()).unwrap(), 16).unwrap())
         .collect();
 
-    Ok(web_transport_wasm::SessionBuilder::new(url.clone())
+    Ok(web_transport_wasm::Client::new()
         .server_certificate_hashes(vec![hexes])
-        .connect()
+        .connect(url)
         .await
         .map_err(|e| anyhow::format_err!("{e}"))?
         .into())
