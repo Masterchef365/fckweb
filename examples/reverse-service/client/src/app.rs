@@ -32,7 +32,7 @@ impl TemplateApp {
         let sess = spawn_promise(async move {
             // Get framework and channel
             let url = url::Url::parse("https://127.0.0.1:9090/")?;
-            let sess = quic_session::client_session(
+            let sess = quic_session::client_session_selfsigned(
                 &url,
                 reverse_common::CERTIFICATE.to_vec(),
                 reverse_common::CERTIFICATE_HASHES.to_vec(),
