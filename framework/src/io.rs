@@ -45,10 +45,8 @@ pub fn webtransport_futures_bridge((mut tx, mut rx): (SendStream, RecvStream)) -
     });
 
     crate::spawn(async move {
-        loop {
-            if let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
-                writehalf.write_all(bytes.as_ref()).await?;
-            }
+        while let Some(bytes) = rx.read(MAX_READ_BYTES).await? {
+            writehalf.write_all(bytes.as_ref()).await?;
         }
 
         #[allow(unreachable_code)]
