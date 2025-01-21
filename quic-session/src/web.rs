@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
 
-pub async fn client_session(
+pub async fn client_session_selfsigned(
     url: &Url,
     certificate: Vec<u8>,
     certificate_hashes: Vec<u8>,
@@ -16,6 +16,17 @@ pub async fn client_session(
 
     Ok(web_transport_wasm::Client::new()
         .server_certificate_hashes(vec![hexes])
+        .connect(url)
+        .await
+        .map_err(|e| anyhow::format_err!("{e}"))?
+        .into())
+}
+
+pub async fn client_session(
+    url: &Url,
+    certificate: Vec<u8>,
+) -> Result<web_transport::Session> {
+    Ok(web_transport_wasm::Client::new()
         .connect(url)
         .await
         .map_err(|e| anyhow::format_err!("{e}"))?
