@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-web-transport = "0.6.2"
+web-transport = "0.9.3"
 log = "0.4"
 anyhow = "1"
 url = "2.5.4"
@@ -20,7 +20,7 @@ rustls = "0.23.29"
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
-web-transport-wasm = "0.4.7"
+web-transport-wasm = "0.5.1"
 web-sys = { version = "0.3.77", features = [
 "WebTransport",
 "WebTransportBidirectionalStream",
