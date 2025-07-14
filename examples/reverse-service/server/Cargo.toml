@@ -8,4 +8,4 @@ anyhow = "1"
 quic-session = { path = "../../../quic-session" }
 framework = { path = "../../../framework" }
 reverse-common = { path = "../common" }
-tokio = { version = "1.40", features = ["full"] }
+tokio = { version = "1.46", features = ["full"] }
