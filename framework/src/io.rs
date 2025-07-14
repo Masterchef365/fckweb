@@ -1,3 +1,4 @@
+use bincode::config::{Fixint, LittleEndian, NoLimit, Varint};
 use bytes::Bytes;
 //use polyfill_tokio_mem::DuplexStream;
 use serde::{de::DeserializeOwned, Serialize};
@@ -70,8 +71,11 @@ pub fn webtransport_protocol<Rx: DeserializeOwned, Tx: Serialize>(
 
 #[derive(thiserror::Error, Debug)]
 pub enum FrameworkError {
+    #[error("Derialization")]
+    BinDecode(#[from] bincode::error::DecodeError),
+
     #[error("Serialization")]
-    Bincode(#[from] bincode::Error),
+    BinEncode(#[from] bincode::error::EncodeError),
 
     #[error("Websocket error {0}")]
     WebSocket(String),
@@ -88,13 +92,19 @@ impl From<web_transport::Error> for FrameworkError {
 
 /// The encoding function for all data. Mostly for internal use, exposed here for debugging
 /// potential
-pub fn encode<T: Serialize>(value: &T) -> bincode::Result<Vec<u8>> {
+pub fn encode<T: Serialize>(value: &T) -> Result<Vec<u8>, bincode::error::EncodeError> {
     //serde_json::to_writer_pretty(std::io::stdout(), value).unwrap();
-    bincode::serialize(value)
+    bincode::serde::encode_to_vec(value, config())
 }
 
 /// The dencoding function for all data. Mostly for internal use, exposed here for debugging
 /// potential
-pub fn decode<T: DeserializeOwned>(bytes: &[u8]) -> bincode::Result<T> {
-    bincode::deserialize(bytes)
+pub fn decode<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, bincode::error::DecodeError> {
+    Ok(bincode::serde::decode_from_slice(bytes, config())?.0)
+}
+
+fn config() -> bincode::config::Configuration<LittleEndian, Fixint, NoLimit> {
+    bincode::config::standard()
+        .with_little_endian()
+        .with_fixed_int_encoding()
 }

@@ -20,4 +20,4 @@ log = "0.4"
 #static-web-server = { version = "2.33.1", features = ["directory-listing"], optional = true }
 
 tower-http = { version = "0.6.6", features = ["fs"], optional = true }
-axum = { version = "0.7.9", optional = true }
+axum = { version = "0.8.4", optional = true }
