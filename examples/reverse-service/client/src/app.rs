@@ -2,15 +2,14 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use anyhow::Result;
-use egui::{DragValue, Ui};
+use egui::Ui;
 use egui_shortcuts::SimpleSpawner;
 use egui_shortcuts::{spawn_promise, Promise};
-use framework::futures::channel::mpsc::{Receiver, Sender};
 use framework::futures::lock::Mutex as FuturesMutex;
-use framework::futures::{SinkExt, StreamExt};
+use framework::futures::StreamExt;
 use framework::tarpc::server::{BaseChannel, Channel};
 use framework::{tarpc, ClientFramework};
-use reverse_common::{MyOtherService, MyOtherServiceClient, MyServiceClient};
+use reverse_common::{MyOtherService, MyServiceClient};
 
 #[derive(Clone)]
 struct Connection {

@@ -1,4 +1,4 @@
-use bincode::config::{Fixint, LittleEndian, NoLimit, Varint};
+use bincode::config::{Fixint, LittleEndian, NoLimit};
 use bytes::Bytes;
 //use polyfill_tokio_mem::DuplexStream;
 use serde::{de::DeserializeOwned, Serialize};

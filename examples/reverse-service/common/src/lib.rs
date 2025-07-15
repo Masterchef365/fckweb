@@ -1,4 +1,4 @@
-use framework::{OfferedService, Subservice};
+use framework::OfferedService;
 
 /// TLS certificate (self-signed for debug purposes)
 pub const CERTIFICATE: &[u8] = include_bytes!("localhost.crt");

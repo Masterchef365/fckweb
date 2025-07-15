@@ -2,7 +2,6 @@ use anyhow::{Context, Result};
 use quinn::{IdleTimeout, TransportConfig, VarInt};
 use rustls::pki_types::CertificateDer;
 use std::net::SocketAddr;
-use std::sync::Arc;
 use url::Url;
 
 pub async fn client_session_selfsigned(
