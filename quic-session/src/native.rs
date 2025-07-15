@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use quinn::{IdleTimeout, TransportConfig, VarInt};
+use rustls::pki_types::CertificateDer;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use url::Url;
@@ -17,9 +18,6 @@ pub async fn client_session(
     certificate: Vec<u8>,
 ) -> Result<web_transport::Session> {
     // Read the PEM certificate chain
-
-    use rustls::pki_types::CertificateDer;
-    //let chain = std::fs::File::open(CERTIFICATE).context("failed to open cert file")?;
     let mut chain = std::io::Cursor::new(certificate);
 
     let chain: Vec<CertificateDer> = rustls_pemfile::certs(&mut chain)
@@ -28,29 +26,11 @@ pub async fn client_session(
 
     anyhow::ensure!(!chain.is_empty(), "could not find certificate");
 
-    let mut roots = rustls::RootCertStore::empty();
-    roots.add_parsable_certificates(chain);
-
-    // Standard quinn setup, accepting only the given certificate.
-    // You should use system roots in production.
-    let mut config = rustls::ClientConfig::builder_with_provider(Arc::new(
-        rustls::crypto::ring::default_provider(),
-    ))
-    .with_protocol_versions(&[&rustls::version::TLS13])?
-    .with_root_certificates(roots)
-    .with_no_client_auth();
-    config.alpn_protocols = vec![web_transport_quinn::ALPN.to_vec()]; // this one is important
-
-    let config: quinn::crypto::rustls::QuicClientConfig = config.try_into()?;
-    let mut config = quinn::ClientConfig::new(Arc::new(config));
-
-    config.transport_config(transport_config().into()); // Don't disconnect so soon h
-
-    let mut client = quinn::Endpoint::client("[::]:0".parse()?)?;
-    client.set_default_client_config(config);
+    let client = web_transport_quinn::ClientBuilder::new().with_server_certificates(chain)?;
 
     // Connect to the given URL.
-    let session = web_transport_quinn::connect(&client, &url).await?;
+    let session = client.connect(url.clone()).await?;    // Connect to the given URL.
+    //let session = web_transport_quinn::connect(&client, &url).await?;
 
     Ok(session.into())
 }
