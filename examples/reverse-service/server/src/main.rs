@@ -11,7 +11,7 @@ use reverse_common::{MyOtherService, MyOtherServiceClient, MyService};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let endpoint = quic_session::server_endpoint(
+    let mut endpoint = quic_session::server_endpoint(
         "0.0.0.0:9090".parse().unwrap(),
         reverse_common::CERTIFICATE.to_vec(),
         include_bytes!("localhost.key").to_vec(),
