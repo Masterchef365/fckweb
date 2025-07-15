@@ -171,7 +171,7 @@ impl ServerFramework {
         &self,
         _token: OfferedService<Client>,
     ) -> Result<impl Transport<Tx, Rx, Error = FrameworkError>, FrameworkError>
-    where
+where
         //Client: Stub<Req = Tx, Resp = Rx>,
     {
         // Holds the lock only while we are opening the stream

@@ -25,9 +25,7 @@ pub async fn client_session(url: &Url, certificate: Vec<u8>) -> Result<web_trans
     let client = web_transport_quinn::ClientBuilder::new().with_server_certificates(chain)?;
 
     // Connect to the given URL.
-    let session = client.connect(url.clone()).await?; // Connect to the given URL.
-                                                      //let session = web_transport_quinn::connect(&client, &url).await?;
-
+    let session = client.connect(url.clone()).await?;
     Ok(session.into())
 }
 
@@ -64,9 +62,6 @@ pub async fn server_endpoint(
 
 pub async fn server_connect(inc: web_transport_quinn::Request) -> Result<web_transport::Session> {
     let session = inc.ok().await.context("failed to accept connection")?;
-
-    //let request = web_transport_quinn::accept(conn).await?;
-    //let session = request.ok().await.context("failed to accept session")?;
 
     Ok(session.into())
 }
